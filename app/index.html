@@ -208,6 +208,12 @@
   .allfoot{display:flex;align-items:center;gap:12px;margin-top:12px}
   .dotsep{color:var(--dim)}
   @media(max-width:560px){.apps{grid-template-columns:repeat(2,1fr)}}
+  .btn.big{font-size:15px;padding:16px 34px;border-radius:12px;margin-top:4px}
+  .orb-lg{width:58px;height:58px;border-radius:50%;position:relative;margin-bottom:2px;
+    background:conic-gradient(from 0deg,var(--h1),var(--h2),var(--h3),var(--h4),var(--h1));
+    box-shadow:0 0 44px rgba(124,243,208,.4);animation:spin 7s linear infinite}
+  .orb-lg.done{animation:none;box-shadow:0 0 56px rgba(124,243,208,.6)}
+  .orb-lg.done::after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:#0a0a0b;font-weight:800;font-size:26px}
   .wm{position:fixed;top:22px;left:26px;z-index:5;font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--mut);display:flex;align-items:center;gap:8px}
   .wm .d{width:7px;height:7px;border-radius:50%;background:linear-gradient(135deg,var(--h1),var(--h2))}
 
@@ -268,6 +274,7 @@ const QS=[
 ];
 const state={identity:'',goals:'',workstyle:'',tasks:''};
 let step=0;
+let connected=false;
 const stage=document.getElementById('stage');
 const restartWrap=document.querySelector('.restart');
 
@@ -281,7 +288,7 @@ const LS='usrkey.v1';
 function saveKey(){try{localStorage.setItem(LS,JSON.stringify(state));}catch(e){}}
 function loadKey(){try{const r=localStorage.getItem(LS);if(r){Object.assign(state,JSON.parse(r));return true;}}catch(e){}return false;}
 function clearKey(){try{localStorage.removeItem(LS);}catch(e){}}
-function resetAll(){for(const k in state)state[k]='';clearKey();if(location.hash)history.replaceState(null,'',location.pathname);step=0;render();}
+function resetAll(){for(const k in state)state[k]='';connected=false;clearKey();if(location.hash)history.replaceState(null,'',location.pathname);step=0;render();}
 function boot(){loadKey();if(location.hash.indexOf('#k=')===0){try{Object.assign(state,JSON.parse(decodeURIComponent(escape(atob(location.hash.slice(3))))));saveKey();}catch(e){}}}
 
 /* ---- renderer: turn the container into a plug ---- */
@@ -392,21 +399,22 @@ function magic(){return `<div class="magic">
 </div>`;}
 function control(){
   const name=firstName();
-  const apps=[
-    {k:'chatgpt',n:'ChatGPT',c:'#19c37d',i:'✦'},
-    {k:'claude',n:'Claude',c:'#d97757',i:'✳'},
-    {k:'gemini',n:'Gemini',c:'#4d7cff',i:'✧'},
-    {k:'cursor',n:'Cursor',c:'#e58bff',i:'⌘'},
-    {k:'copilot',n:'Copilot',c:'#63e6e2',i:'❖'},
-    {k:'other',n:'Any AI',c:'#ffd27c',i:'+'}
-  ];
-  const tiles=apps.map(a=>`<button class="app" data-connect="${a.k}"><span class="ic" style="background:${a.c}">${a.i}</span><span class="an">${a.n}</span><span class="st">connect</span></button>`).join('');
+  if(connected){
+    return `<div class="allset">
+      <div class="orb-lg done"></div>
+      <span class="kicker" style="color:var(--h1)">Connected</span>
+      <h2>You&rsquo;re connected, <span class="g">${esc(name)}</span>.</h2>
+      <p class="sub2">Every AI you open now picks up what you shared. Nothing else to do — it just works.</p>
+      <div class="allfoot"><button class="lnk" data-copyfull="1">what it shares</button><span class="dotsep">·</span><button class="lnk" data-reset="1">start over</button></div>
+    </div>`;
+  }
   return `<div class="allset">
-    <span class="kicker">All set ✓</span>
-    <h2>Nice to meet you,<br><span class="g">${esc(name)}</span>.</h2>
-    <p class="sub2">Connect the AIs you use — they&rsquo;ll pick up right where you are. No copy-paste, no setup. You choose what each one sees.</p>
-    <div class="apps">${tiles}</div>
-    <div class="allfoot"><button class="lnk" data-copyfull="1">or copy my info</button><span class="dotsep">·</span><button class="lnk" data-reset="1">start over</button></div>
+    <div class="orb-lg"></div>
+    <span class="kicker">Last step</span>
+    <h2>One tap.<br><span class="g">Connected everywhere.</span></h2>
+    <p class="sub2">Turn USRKey on once. Every assistant you use — now and later — picks up what you shared. No copy-paste, no per-app setup.</p>
+    <button class="btn big" data-connectall="1">Connect USRKey</button>
+    <div class="allfoot"><button class="lnk" data-reset="1">start over</button></div>
   </div>`;}
 
 function wire(el){
@@ -418,7 +426,7 @@ function wire(el){
   el.querySelectorAll('[data-copytool]').forEach(b=>b.onclick=()=>copyText(renderPaste(TOOLSCOPE[b.dataset.copytool]),TOOLLABEL[b.dataset.copytool]+' bundle copied — only the fields you granted'));
   el.querySelectorAll('[data-download]').forEach(b=>b.onclick=downloadMd);
   el.querySelectorAll('[data-link]').forEach(b=>b.onclick=()=>copyText(shareLink(),'Private link copied — it opens your USRKey anywhere'));
-  el.querySelectorAll('[data-connect]').forEach(b=>b.onclick=()=>{const k=b.dataset.connect;const txt=renderPaste(TOOLSCOPE[k]||['identity','goals','workstyle','tasks']);if(navigator.clipboard&&txt)navigator.clipboard.writeText(txt).catch(()=>{});b.classList.add('done');const st=b.querySelector('.st');if(st)st.textContent='connected ✓';toast(TOOLLABEL[k]+' is ready — it knows you now');});
+  el.querySelectorAll('[data-connectall]').forEach(b=>b.onclick=()=>{const txt=renderPaste(['identity','goals','workstyle','tasks']);if(navigator.clipboard&&txt)navigator.clipboard.writeText(txt).catch(()=>{});connected=true;render();setTimeout(()=>toast('USRKey is on — connected everywhere'),170);});
   const ta=el.querySelector('#ans'),cnt=el.querySelector('#cnt');
   if(ta){const upd=()=>{cnt.textContent=ta.value.length?ta.value.length+'/240':'';};upd();
     setTimeout(()=>ta.focus(),560);ta.addEventListener('input',upd);
@@ -443,7 +451,7 @@ function runChat(el){
   setTimeout(()=>{const t=document.createElement('div');t.className='msg ai';t.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';box.appendChild(t);
     setTimeout(()=>{t.outerHTML=ai;
       setTimeout(()=>{const c=document.createElement('div');c.style.cssText='text-align:center;margin-top:14px';
-        c.innerHTML='<button class="btn ghost" data-go="7">Perfect — connect my AIs →</button>';
+        c.innerHTML='<button class="btn ghost" data-go="7">Perfect — last step →</button>';
         box.parentElement.appendChild(c);c.querySelector('button').onclick=()=>{step=7;render();};},640);
     },reduce?0:1250);
   },560);
