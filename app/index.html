@@ -348,8 +348,7 @@ function welcome(){
     <span class="kicker">Where you <span class="b">start</span> with AI</span>
     <h1>Let AI know<br>what you&rsquo;re<br><span class="g">ready to build</span>.</h1>
     <p>New to AI, or tired of re-explaining yourself in every chat? Introduce yourself once — your goals, how you work — and every AI picks up from there. You own exactly what it sees.</p>
-    <div class="row"><button class="btn" data-go="1">Introduce yourself →</button>
-      <button class="lnk" data-go="6" style="opacity:.7">see how it works</button></div>
+    <div class="row"><button class="btn" data-go="1">Get started →</button></div>
     <div class="meta"><span><b>~60s</b> to set up</span><span><b>no</b> account</span><span><b>a file</b> you own</span></div>
   </div>
   <div class="herostage"><div class="heroglow"></div>${cardHTML('Your name','USRKEY · YOURS',0,true)}</div>
@@ -399,22 +398,12 @@ function magic(){return `<div class="magic">
 </div>`;}
 function control(){
   const name=firstName();
-  if(connected){
-    return `<div class="allset">
-      <div class="orb-lg done"></div>
-      <span class="kicker" style="color:var(--h1)">Connected</span>
-      <h2>You&rsquo;re connected, <span class="g">${esc(name)}</span>.</h2>
-      <p class="sub2">Every AI you open now picks up what you shared. Nothing else to do — it just works.</p>
-      <div class="allfoot"><button class="lnk" data-copyfull="1">what it shares</button><span class="dotsep">·</span><button class="lnk" data-reset="1">start over</button></div>
-    </div>`;
-  }
   return `<div class="allset">
-    <div class="orb-lg"></div>
-    <span class="kicker">Last step</span>
-    <h2>One tap.<br><span class="g">Connected everywhere.</span></h2>
-    <p class="sub2">Turn USRKey on once. Every assistant you use — now and later — picks up what you shared. No copy-paste, no per-app setup.</p>
-    <button class="btn big" data-connectall="1">Connect USRKey</button>
-    <div class="allfoot"><button class="lnk" data-reset="1">start over</button></div>
+    <div class="orb-lg done"></div>
+    <span class="kicker" style="color:var(--h1)">You&rsquo;re live</span>
+    <h2>Anything can connect<br>to <span class="g">you</span> now.</h2>
+    <p class="sub2">Your USRKey is set, ${esc(name)}. Any MCP, AI, or app can pick up what you chose to share — and asks you first, every time. You stay in control.</p>
+    <div class="allfoot"><button class="lnk" data-copyfull="1">what it shares</button><span class="dotsep">·</span><button class="lnk" data-reset="1">start over</button></div>
   </div>`;}
 
 function wire(el){
@@ -451,7 +440,7 @@ function runChat(el){
   setTimeout(()=>{const t=document.createElement('div');t.className='msg ai';t.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';box.appendChild(t);
     setTimeout(()=>{t.outerHTML=ai;
       setTimeout(()=>{const c=document.createElement('div');c.style.cssText='text-align:center;margin-top:14px';
-        c.innerHTML='<button class="btn ghost" data-go="7">Perfect — last step →</button>';
+        c.innerHTML='<button class="btn ghost" data-go="7">Perfect — all set →</button>';
         box.parentElement.appendChild(c);c.querySelector('button').onclick=()=>{step=7;render();};},640);
     },reduce?0:1250);
   },560);
