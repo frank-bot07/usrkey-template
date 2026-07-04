@@ -101,6 +101,8 @@
   .prog i.done{background:var(--ink)}
   .prog i.cur{background:linear-gradient(90deg,var(--h1),var(--h2))}
   .qidx{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.14em}
+  .asker{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+  .asker .orb{width:16px;height:16px;border-radius:50%;background:conic-gradient(from 0deg,var(--h1),var(--h2),var(--h3),var(--h4),var(--h1));box-shadow:0 0 10px rgba(124,243,208,.45);animation:spin 6s linear infinite}
   .qbody{margin:auto 0}
   .qbody h2{margin:12px 0 12px}
   .qbody h2 .g{background:linear-gradient(96deg,var(--h1),var(--h2));-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -225,16 +227,20 @@ function tiltCard(kc){
 }
 
 const QS=[
-  {key:'identity',n:'01 / 04',h:'Who <span class="g">are</span> you?',hint:'Your name and what you do — the intro you wish every AI already had.',
-   ph:'Chad — founder building USRKey. US Central.',chips:['Founder','Engineer','Designer','Writer'],note:'Only what you type is shared. <b>Nothing inferred.</b>'},
-  {key:'stack',n:'02 / 04',h:'What&rsquo;s your <span class="g">world</span>?',hint:'The tools you live in and how you like to work — useful on day one, not day five.',
-   ph:'TypeScript / Node, SQLite. Cursor + Claude Code. Show me the diff, not the whole file.',chips:['Show diffs','Terse first','Plan before code','No unasked refactors'],note:'The context agents reuse <b>most.</b>'},
-  {key:'now',n:'03 / 04',h:'What&rsquo;s true <span class="g">now</span>?',hint:'This week&rsquo;s focus. This one is dated — a nudge reminds you to refresh it.',
-   ph:'Launching USRKey. Recording the demo this week. Async-only Thu–Sun.',chips:['Launching soon','Deep in a build','Traveling','Crunch mode'],note:'Expires on purpose. <b>Keep it live.</b>'},
-  {key:'bounds',n:'04 / 04',h:'What must an AI <span class="g">never</span> do?',hint:'The line that makes the rest safe to share. Never handed out without your say-so.',
-   ph:"Don't infer my mood or health. Never store anything about my family. Correct me directly.",chips:["Don't guess mood","Never mention family","No financial figures","Ask if unsure"],note:'Private. Agents <b>read, never edit.</b>'}
+  {key:'identity',ai:'Getting to know you',h:'Who am I <span class="g">talking to</span>?',
+   hint:"I&rsquo;m glad you&rsquo;re here. Tell me who you are — so I&rsquo;m useful from the first message, not the fifth.",
+   ph:'Chad — founder building USRKey. US Central.',chips:['Founder','Engineer','Designer','Writer','Just curious'],note:'Only what you tell me. <b>Nothing inferred.</b>'},
+  {key:'goals',ai:'What matters to you',h:'What are you <span class="g">working toward</span>?',
+   hint:'Your goals right now — what you actually want to move forward. I&rsquo;ll keep them in view so my help points that way.',
+   ph:'Launch USRKey and reach the first 1,000 people who need it.',chips:['Launching something','Growing an audience','Learning to build','Shipping faster'],note:'Kept in view. <b>Yours to change.</b>'},
+  {key:'workstyle',ai:'How to show up',h:'How do you like to <span class="g">work</span>?',
+   hint:'How should I show up — how much detail, how direct, plan first or just do it? I adapt to you, not the reverse.',
+   ph:'Terse first, detail on request. Show me the diff. Plan before big changes.',chips:['Be concise','Be direct','Plan first','Show your work'],note:'I adapt to <b>you.</b>'},
+  {key:'tasks',ai:'How I can help',h:'What can I <span class="g">take off your plate</span>?',
+   hint:'The work you&rsquo;d rather not hold — so you can focus on your goals. Name it and I&rsquo;ll be ready to run.',
+   ph:'Draft and clean up code, summarize what I missed, keep my next steps straight.',chips:['Draft & edit','Research & summarize','Track my tasks','Handle busywork'],note:'You decide what I <b>touch.</b>'}
 ];
-const state={identity:'',stack:'',now:'',bounds:''};
+const state={identity:'',goals:'',workstyle:'',tasks:''};
 let step=0;
 const stage=document.getElementById('stage');
 const restartWrap=document.querySelector('.restart');
@@ -242,7 +248,7 @@ const restartWrap=document.querySelector('.restart');
 function firstName(){const s=(state.identity||'You').trim();const m=s.match(/[A-Z][a-z]+/);return m?m[0]:(s.split(/[\s,—-]/)[0]||'You');}
 function esc(t){return (t||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
 function clause(t,f){if(!t)return f;const c=t.split(/[.\n—;]/)[0].trim();return c||f;}
-function filled(){return ['identity','stack','now','bounds'].filter(k=>state[k]).length;}
+function filled(){return ['identity','goals','workstyle','tasks'].filter(k=>state[k]).length;}
 
 function render(){
   const prev=stage.querySelector('.screen.on');
@@ -262,29 +268,29 @@ function view(){
 }
 function welcome(){return `<div class="welcome">
   <div class="copy">
-    <span class="kicker">Your context · <span class="b">your key</span></span>
+    <span class="kicker">Where you <span class="b">start</span> with AI</span>
     <h1>Let AI know<br>what you&rsquo;re<br><span class="g">ready to build</span>.</h1>
-    <p>Answer four questions — share only what you choose. Every AI you work with starts from that, never from zero. You decide exactly what it sees.</p>
-    <div class="row"><button class="btn" data-go="1">Create your key →</button>
-      <button class="lnk" data-go="6" style="opacity:.7">see the payoff first</button></div>
-    <div class="meta"><span><b>~60s</b> setup</span><span><b>0</b> account</span><span><b>1</b> file you own</span></div>
+    <p>New to AI, or tired of re-explaining yourself in every chat? Introduce yourself once — your goals, how you work — and every AI picks up from there. You own exactly what it sees.</p>
+    <div class="row"><button class="btn" data-go="1">Introduce yourself →</button>
+      <button class="lnk" data-go="6" style="opacity:.7">see how it works</button></div>
+    <div class="meta"><span><b>~60s</b> to set up</span><span><b>no</b> account</span><span><b>a file</b> you own</span></div>
   </div>
-  <div class="herostage"><div class="heroglow"></div>${cardHTML('Your name','USRKEY · SELF-ISSUED',0,true)}</div>
+  <div class="herostage"><div class="heroglow"></div>${cardHTML('Your name','USRKEY · YOURS',0,true)}</div>
 </div>`;}
 function question(i){const q=QS[i];
   const prog='<div class="prog">'+[0,1,2,3].map(k=>`<i class="${k<i?'done':k===i?'cur':''}"></i>`).join('')+'</div>';
   const nm=state.identity?esc(firstName()):'Your name';
   return `<div class="panel"><div class="qwrap">
     <div class="qmain">
-      <div class="qtop"><span class="qidx">${q.n}</span>${prog}</div>
+      <div class="qtop"><span class="asker"><span class="orb"></span>${q.ai}</span>${prog}</div>
       <div class="qbody">
         <h2>${q.h}</h2>
         <p class="qhint">${q.hint}</p>
         <div class="entry"><textarea id="ans" rows="2" maxlength="240" placeholder="${q.ph}">${esc(state[q.key])}</textarea><span class="cnt" id="cnt"></span></div>
         <div class="chips">${q.chips.map(c=>`<span class="chip">${c}</span>`).join('')}</div>
       </div>
-      <div class="qfoot"><button class="lnk" data-skip="1">Skip — I&rsquo;d rather not share this</button>
-        <button class="btn" data-next="1">${i<3?'Continue →':'Create key →'}</button></div>
+      <div class="qfoot"><button class="lnk" data-skip="1">Skip — I&rsquo;d rather not say</button>
+        <button class="btn" data-next="1">${i<3?'Continue →':'Done — meet your AI →'}</button></div>
     </div>
     <div class="qside">${cardHTML(nm,'USRKEY · '+(i+1)+'/4',i+1,false)}
       <div class="sidenote">${q.note}</div></div>
@@ -297,11 +303,11 @@ function reveal(){
     <span class="kicker">Your key · <span class="b">ready</span></span>
     ${cardHTML(esc(name),'USRKEY · '+filled()+'/4 FIELDS',filled(),true)}
     <div class="rows">
-      ${r('Works in',state.stack,'— skipped —')}
-      ${r('Right now',state.now,'— skipped —')}
-      ${r('Boundaries',state.bounds?'Private · read-only to agents':'','— skipped —')}
+      ${r('Working toward',state.goals,'— skipped —')}
+      ${r('Works best when',state.workstyle,'— skipped —')}
+      ${r('Wants help with',state.tasks,'— skipped —')}
     </div>
-    <p class="cap">Exactly what you chose — nothing more. Now watch a fresh AI meet you.</p>
+    <p class="cap">This is what I understood — and you own all of it. Watch me put it to work.</p>
     <button class="btn" data-go="6">See it in action →</button>
   </div>`;}
 function magic(){return `<div class="magic">
@@ -319,26 +325,26 @@ function control(){
   const md=`<span class="c"># identity</span>
 ${esc(state.identity||'(skipped)')}
 
-<span class="h"># stack</span>
-${esc(state.stack||'(skipped)')}
+<span class="h"># goals</span>
+${esc(state.goals||'(skipped)')}
 
-<span class="h"># now  </span><span class="c">· dated</span>
-${esc(state.now||'(skipped)')}
+<span class="h"># working-style</span>
+${esc(state.workstyle||'(skipped)')}
 
-<span class="h"># boundaries</span> <span class="c">· private, read-only</span>
-${esc(state.bounds||'(skipped)')}`;
+<span class="h"># how-i-help</span>
+${esc(state.tasks||'(skipped)')}`;
   const t=(av,g,n,s)=>`<div class="tool"><div class="w"><div class="av" style="background:${g}">${av}</div><div><div class="n">${n}</div><div class="s">${s}</div></div></div><span class="tag">granted</span></div>`;
   return `<div class="panel"><div class="ctrl">
     <span class="kicker">You&rsquo;re in control</span>
     <h2>One key. <span class="g">You</span> decide who sees what.</h2>
-    <p class="lede">Each agent gets only the fields you grant — and your boundaries are never in a default bundle. Change it anytime; nothing leaves your device unless you say so.</p>
+    <p class="lede">Each AI gets only the fields you grant — your goals, your style, the tasks you hand it. Change or revoke any of it anytime; nothing leaves your device unless you say so.</p>
     <div class="grid2">
       <div>
-        ${t('C','linear-gradient(135deg,#7cf3d0,#38bfa0)','Claude','identity · stack · now · history')}
-        ${t('⌘','linear-gradient(135deg,#8ea2ff,#5b73e6)','Cursor','identity · stack · now')}
-        ${t('G','linear-gradient(135deg,#e58bff,#b45be0)','ChatGPT · web','identity · stack')}
+        ${t('C','linear-gradient(135deg,#7cf3d0,#38bfa0)','Claude','identity · goals · style · tasks')}
+        ${t('⌘','linear-gradient(135deg,#8ea2ff,#5b73e6)','Cursor','identity · goals · style')}
+        ${t('G','linear-gradient(135deg,#e58bff,#b45be0)','ChatGPT · web','identity · goals')}
         ${t('+','linear-gradient(135deg,#ffd27c,#e0a640)','Any other','identity only')}
-        <div class="sealed">◆ Boundaries stay private — readable by agents, never editable, never in a default grant.</div>
+        <div class="sealed">◆ You granted each field yourself. Revoke or edit any of it in one tap — no AI widens its own access.</div>
       </div>
       <div class="filebox">
         <div class="fb"><span class="fn">◆ ${name.toLowerCase()}.usrkey.md</span><span class="m">the file underneath</span></div>
@@ -367,12 +373,12 @@ document.getElementById('restart').onclick=()=>{step=0;render();};
 
 function runChat(el){
   const box=el.querySelector('#msgs');const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
-  const name=firstName(),stack=clause(state.stack,''),now=clause(state.now,''),bound=clause(state.bounds,'');
+  const name=firstName(),goals=clause(state.goals,''),workstyle=clause(state.workstyle,''),tasks=clause(state.tasks,'');
   box.innerHTML=`<div class="msg you">hey</div>`;
-  const parts=[`Hey <b>${esc(name)}</b> — good to see you.`];
-  if(stack)parts.push(`I&rsquo;ve got your setup (${esc(stack.toLowerCase())}), so I&rsquo;ll skip the onboarding.`);
-  if(now)parts.push(`And I know you&rsquo;re on: <b>${esc(now.toLowerCase())}</b>.`);
-  parts.push(bound?`I&rsquo;ll respect your boundaries too. Where do you want to start?`:`Where do you want to start?`);
+  const parts=[`Hey <b>${esc(name)}</b> — good to meet you.`];
+  if(goals)parts.push(`I know you&rsquo;re working toward <b>${esc(goals.toLowerCase())}</b>,`);
+  if(workstyle)parts.push(`and I&rsquo;ll work the way you like — ${esc(workstyle.toLowerCase())}.`);
+  parts.push(tasks?`Want me to start on ${esc(tasks.toLowerCase())}?`:`Where do you want to start?`);
   const ai=`<div class="msg ai">${parts.join(' ')}</div>`;
   setTimeout(()=>{const t=document.createElement('div');t.className='msg ai';t.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';box.appendChild(t);
     setTimeout(()=>{t.outerHTML=ai;
