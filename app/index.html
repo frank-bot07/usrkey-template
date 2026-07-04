@@ -190,6 +190,24 @@
     border:1px solid var(--line-2);color:var(--ink);font-size:13px;letter-spacing:-.01em;padding:11px 18px;border-radius:10px;
     opacity:0;transition:.28s var(--ease);pointer-events:none;box-shadow:0 22px 50px -20px #000;max-width:82vw;text-align:center}
   #toast.on{opacity:1;transform:translateX(-50%)}
+  /* ---------- ALL SET (connect) ---------- */
+  .allset{display:grid;justify-items:center;gap:16px;width:100%;text-align:center;padding:0 12px}
+  .allset .kicker{color:var(--h1)}
+  .allset h2{font-size:clamp(30px,4.8vw,52px)}
+  .allset .sub2{color:var(--mut);font-size:15.5px;max-width:440px;line-height:1.55;letter-spacing:-.01em}
+  .apps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;width:100%;max-width:560px;margin-top:6px}
+  .app{display:flex;align-items:center;gap:11px;padding:13px 15px;border:1px solid var(--line);border-radius:14px;
+    background:var(--surf);cursor:pointer;transition:.18s var(--ease);text-align:left;font-family:var(--sans)}
+  .app:hover{border-color:var(--line-2);transform:translateY(-1px);background:var(--surf-2)}
+  .app:focus-visible{outline:2px solid var(--h2);outline-offset:2px}
+  .app .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:15px;color:#0a0a0b;font-weight:700;flex:none}
+  .app .an{font-size:14.5px;letter-spacing:-.01em;color:var(--ink)}
+  .app .st{margin-left:auto;font-family:var(--mono);font-size:9.5px;color:var(--dim);letter-spacing:.09em;text-transform:uppercase}
+  .app.done{border-color:rgba(124,243,208,.45);background:rgba(124,243,208,.07)}
+  .app.done .st{color:var(--h1)}
+  .allfoot{display:flex;align-items:center;gap:12px;margin-top:12px}
+  .dotsep{color:var(--dim)}
+  @media(max-width:560px){.apps{grid-template-columns:repeat(2,1fr)}}
   .wm{position:fixed;top:22px;left:26px;z-index:5;font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--mut);display:flex;align-items:center;gap:8px}
   .wm .d{width:7px;height:7px;border-radius:50%;background:linear-gradient(135deg,var(--h1),var(--h2))}
 
@@ -268,8 +286,8 @@ function boot(){loadKey();if(location.hash.indexOf('#k=')===0){try{Object.assign
 
 /* ---- renderer: turn the container into a plug ---- */
 const FIELD={identity:'WHO I AM',goals:"WHAT I'M WORKING TOWARD",workstyle:'HOW I LIKE TO WORK',tasks:"WHERE I'D LIKE HELP"};
-const TOOLSCOPE={claude:['identity','goals','workstyle','tasks'],cursor:['identity','goals','workstyle'],chatgpt:['identity','goals'],other:['identity']};
-const TOOLLABEL={claude:'Claude',cursor:'Cursor',chatgpt:'ChatGPT',other:'Basic'};
+const TOOLSCOPE={claude:['identity','goals','workstyle','tasks'],cursor:['identity','goals','workstyle'],chatgpt:['identity','goals'],gemini:['identity','goals'],copilot:['identity','goals','workstyle'],other:['identity']};
+const TOOLLABEL={claude:'Claude',cursor:'Cursor',chatgpt:'ChatGPT',gemini:'Gemini',copilot:'Copilot',other:'Any AI'};
 function renderPaste(keys){
   const out=['Context about me — shared with USRKey. Only what I chose to share.',''];
   let any=false;
@@ -374,35 +392,22 @@ function magic(){return `<div class="magic">
 </div>`;}
 function control(){
   const name=firstName();
-  const line=(k,h)=>state[k]?`<span class="h"># ${h}</span>\n${esc(state[k])}\n\n`:'';
-  const md=(line('identity','me')+line('goals','goals')+line('workstyle','working-style')+line('tasks','how-i-help')).trim()||'<span class="c"># empty — nothing shared yet</span>';
-  const t=(av,g,n,s,key)=>`<div class="tool"><div class="w"><div class="av" style="background:${g}">${av}</div><div><div class="n">${n}</div><div class="s">${s}</div></div></div><button class="tag copy" data-copytool="${key}">copy →</button></div>`;
-  return `<div class="panel"><div class="ctrl">
-    <span class="kicker">Saved · <span class="b">plug it in</span></span>
-    <h2>Your USRKey is ready. <span class="g">Plug it in</span> anywhere.</h2>
-    <p class="lede">Copy it into any AI&rsquo;s custom instructions or first message — or hand one tool just part of it. You control every share; nothing leaves this device unless you send it.</p>
-    <div class="actions">
-      <button class="btn" data-copyfull="1">⧉ Copy my USRKey</button>
-      <button class="btn ghost" data-download="1">↓ .md file</button>
-      <button class="btn ghost" data-link="1">⧉ Private link</button>
-    </div>
-    <div class="grid2">
-      <div>
-        <div class="glabel">Grant one tool only part of it</div>
-        ${t('C','linear-gradient(135deg,#7cf3d0,#38bfa0)','Claude','identity · goals · style · tasks','claude')}
-        ${t('⌘','linear-gradient(135deg,#8ea2ff,#5b73e6)','Cursor','identity · goals · style','cursor')}
-        ${t('G','linear-gradient(135deg,#e58bff,#b45be0)','ChatGPT · web','identity · goals','chatgpt')}
-        ${t('+','linear-gradient(135deg,#ffd27c,#e0a640)','Any other','identity only','other')}
-        <div class="sealed">◆ Copy hands over only the fields you granted — no AI widens its own access.</div>
-      </div>
-      <div class="filebox">
-        <div class="fb"><span class="fn">◆ ${name.toLowerCase()}.usrkey.md</span><span class="m">saved on this device</span></div>
-        <pre>${md}</pre>
-      </div>
-    </div>
-    <div class="foot"><p>Underneath, it&rsquo;s a plain file you own and can read — the same context, handed to every AI, showing only what you chose.</p>
-      <button class="btn ghost" data-reset="1">↺ Start fresh</button></div>
-  </div></div>`;}
+  const apps=[
+    {k:'chatgpt',n:'ChatGPT',c:'#19c37d',i:'✦'},
+    {k:'claude',n:'Claude',c:'#d97757',i:'✳'},
+    {k:'gemini',n:'Gemini',c:'#4d7cff',i:'✧'},
+    {k:'cursor',n:'Cursor',c:'#e58bff',i:'⌘'},
+    {k:'copilot',n:'Copilot',c:'#63e6e2',i:'❖'},
+    {k:'other',n:'Any AI',c:'#ffd27c',i:'+'}
+  ];
+  const tiles=apps.map(a=>`<button class="app" data-connect="${a.k}"><span class="ic" style="background:${a.c}">${a.i}</span><span class="an">${a.n}</span><span class="st">connect</span></button>`).join('');
+  return `<div class="allset">
+    <span class="kicker">All set ✓</span>
+    <h2>Nice to meet you,<br><span class="g">${esc(name)}</span>.</h2>
+    <p class="sub2">Connect the AIs you use — they&rsquo;ll pick up right where you are. No copy-paste, no setup. You choose what each one sees.</p>
+    <div class="apps">${tiles}</div>
+    <div class="allfoot"><button class="lnk" data-copyfull="1">or copy my info</button><span class="dotsep">·</span><button class="lnk" data-reset="1">start over</button></div>
+  </div>`;}
 
 function wire(el){
   el.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{step=+b.dataset.go;render();});
@@ -413,6 +418,7 @@ function wire(el){
   el.querySelectorAll('[data-copytool]').forEach(b=>b.onclick=()=>copyText(renderPaste(TOOLSCOPE[b.dataset.copytool]),TOOLLABEL[b.dataset.copytool]+' bundle copied — only the fields you granted'));
   el.querySelectorAll('[data-download]').forEach(b=>b.onclick=downloadMd);
   el.querySelectorAll('[data-link]').forEach(b=>b.onclick=()=>copyText(shareLink(),'Private link copied — it opens your USRKey anywhere'));
+  el.querySelectorAll('[data-connect]').forEach(b=>b.onclick=()=>{const k=b.dataset.connect;const txt=renderPaste(TOOLSCOPE[k]||['identity','goals','workstyle','tasks']);if(navigator.clipboard&&txt)navigator.clipboard.writeText(txt).catch(()=>{});b.classList.add('done');const st=b.querySelector('.st');if(st)st.textContent='connected ✓';toast(TOOLLABEL[k]+' is ready — it knows you now');});
   const ta=el.querySelector('#ans'),cnt=el.querySelector('#cnt');
   if(ta){const upd=()=>{cnt.textContent=ta.value.length?ta.value.length+'/240':'';};upd();
     setTimeout(()=>ta.focus(),560);ta.addEventListener('input',upd);
@@ -437,7 +443,7 @@ function runChat(el){
   setTimeout(()=>{const t=document.createElement('div');t.className='msg ai';t.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';box.appendChild(t);
     setTimeout(()=>{t.outerHTML=ai;
       setTimeout(()=>{const c=document.createElement('div');c.style.cssText='text-align:center;margin-top:14px';
-        c.innerHTML='<button class="btn ghost" data-go="7">It just knew → see what it saw</button>';
+        c.innerHTML='<button class="btn ghost" data-go="7">Perfect — connect my AIs →</button>';
         box.parentElement.appendChild(c);c.querySelector('button').onclick=()=>{step=7;render();};},640);
     },reduce?0:1250);
   },560);
