@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>USRKey — forge your key</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#08080c; --panel:rgba(255,255,255,.035); --panel-2:rgba(255,255,255,.06);
+    --line:rgba(255,255,255,.09); --line-2:rgba(255,255,255,.14);
+    --ink:#edecf0; --mut:#9a98a6; --dim:#6a6875;
+    --gold:#f5c451; --gold-soft:#f5c45133; --violet:#8b7cff; --violet-soft:#8b7cff33; --cyan:#63e6e2;
+    --r:18px; --ease:cubic-bezier(.22,.61,.36,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:'Inter',system-ui,-apple-system,sans-serif;
+    background:var(--bg); color:var(--ink);
+    -webkit-font-smoothing:antialiased; overflow:hidden;
+    display:grid; place-items:center; min-height:100dvh;
+  }
+  /* --- aurora --- */
+  .aurora{position:fixed;inset:0;z-index:0;overflow:hidden;filter:blur(60px);opacity:.55}
+  .blob{position:absolute;border-radius:50%;mix-blend-mode:screen;animation:drift 22s var(--ease) infinite alternate}
+  .b1{width:52vw;height:52vw;left:-10vw;top:-14vw;background:radial-gradient(circle,#8b7cff88,transparent 62%)}
+  .b2{width:46vw;height:46vw;right:-8vw;top:2vw;background:radial-gradient(circle,#f5c45166,transparent 62%);animation-delay:-7s}
+  .b3{width:40vw;height:40vw;left:24vw;bottom:-18vw;background:radial-gradient(circle,#63e6e255,transparent 60%);animation-delay:-13s}
+  @keyframes drift{to{transform:translate3d(6vw,4vh,0) scale(1.15)}}
+  .grain{position:fixed;inset:0;z-index:1;opacity:.035;pointer-events:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+  /* --- stage --- */
+  .stage{position:relative;z-index:2;width:min(1040px,94vw);height:min(680px,92dvh);
+    display:grid;grid-template-columns:1fr;place-items:center}
+  .screen{position:absolute;inset:0;display:grid;place-items:center;
+    opacity:0;transform:translateY(14px) scale(.99);pointer-events:none;
+    transition:opacity .5s var(--ease),transform .5s var(--ease)}
+  .screen.on{opacity:1;transform:none;pointer-events:auto}
+  .screen.out{opacity:0;transform:translateY(-14px) scale(.99)}
+
+  .card{width:100%;background:var(--panel);border:1px solid var(--line);
+    border-radius:var(--r);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+    box-shadow:0 40px 120px -40px #000,inset 0 1px 0 rgba(255,255,255,.06);padding:0;overflow:hidden}
+
+  .brand{position:fixed;top:26px;left:28px;z-index:5;display:flex;align-items:center;gap:9px;
+    font-weight:600;letter-spacing:-.01em;font-size:14px;color:var(--ink)}
+  .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);
+    box-shadow:0 0 14px 2px var(--gold-soft)}
+  .brand small{color:var(--dim);font-weight:500}
+
+  h1,h2,.serif{font-family:'Instrument Serif',Georgia,serif;font-weight:400;letter-spacing:-.01em;line-height:1.02}
+  .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);font-weight:600}
+
+  /* --- welcome --- */
+  .welcome{text-align:center;max-width:620px;padding:0 20px}
+  .welcome h1{font-size:clamp(46px,8vw,82px);margin:20px 0 10px}
+  .welcome h1 em{font-style:italic;color:var(--gold)}
+  .welcome p{color:var(--mut);font-size:17px;line-height:1.55;max-width:460px;margin:0 auto 30px}
+  .keyhero{margin:0 auto 6px;filter:drop-shadow(0 0 22px var(--gold-soft))}
+
+  .btn{appearance:none;border:none;cursor:pointer;font-family:inherit;font-weight:600;font-size:15px;
+    color:#0a0a0a;background:linear-gradient(180deg,#ffe39a,var(--gold));
+    padding:14px 26px;border-radius:12px;letter-spacing:-.01em;position:relative;
+    transition:transform .25s var(--ease),box-shadow .25s var(--ease);
+    box-shadow:0 10px 30px -8px var(--gold-soft),inset 0 1px 0 rgba(255,255,255,.5)}
+  .btn:hover{transform:translateY(-2px);box-shadow:0 16px 40px -8px var(--gold-soft),inset 0 1px 0 rgba(255,255,255,.6)}
+  .btn:active{transform:translateY(0)}
+  .btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line-2);box-shadow:none}
+  .btn.ghost:hover{background:var(--panel-2);transform:translateY(-1px)}
+  .btn.sm{padding:10px 18px;font-size:13.5px}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+  /* --- question layout --- */
+  .qwrap{display:grid;grid-template-columns:1.25fr .75fr;gap:0;min-height:520px}
+  .qmain{padding:52px 48px;display:flex;flex-direction:column}
+  .qside{background:linear-gradient(180deg,rgba(139,124,255,.06),rgba(245,196,81,.05));
+    border-left:1px solid var(--line);display:grid;place-items:center;position:relative;overflow:hidden}
+  .qtop{display:flex;align-items:center;justify-content:space-between;margin-bottom:auto}
+  .steps{display:flex;gap:7px}
+  .steps i{width:26px;height:4px;border-radius:3px;background:var(--line-2);transition:.4s var(--ease)}
+  .steps i.done{background:var(--gold);box-shadow:0 0 10px var(--gold-soft)}
+  .steps i.cur{background:linear-gradient(90deg,var(--gold),transparent);background-size:200% 100%;animation:sweep 1.4s linear infinite}
+  @keyframes sweep{to{background-position:-200% 0}}
+  .qbody{margin:auto 0}
+  .qn{color:var(--dim);font-size:13px;font-weight:600;letter-spacing:.04em;margin-bottom:14px}
+  .qbody h2{font-size:clamp(30px,4.2vw,44px);margin-bottom:12px}
+  .qbody h2 em{font-style:italic;color:var(--gold)}
+  .qhint{color:var(--mut);font-size:15px;line-height:1.5;margin-bottom:26px;max-width:440px}
+  .field textarea,.field input{width:100%;background:rgba(0,0,0,.25);border:1px solid var(--line-2);
+    color:var(--ink);font-family:inherit;font-size:16px;padding:15px 16px;border-radius:12px;
+    resize:none;transition:.25s var(--ease);line-height:1.5}
+  .field textarea:focus,.field input:focus{outline:none;border-color:var(--gold);
+    box-shadow:0 0 0 4px var(--gold-soft);background:rgba(0,0,0,.35)}
+  .field textarea::placeholder,.field input::placeholder{color:var(--dim)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .chip{font-size:12.5px;color:var(--mut);background:var(--panel-2);border:1px solid var(--line);
+    padding:6px 12px;border-radius:20px;cursor:pointer;transition:.2s var(--ease)}
+  .chip:hover{color:var(--ink);border-color:var(--gold);background:var(--gold-soft)}
+  .qfoot{display:flex;align-items:center;justify-content:space-between;margin-top:32px;gap:16px}
+  .skip{color:var(--dim);font-size:13.5px;cursor:pointer;background:none;border:none;font-family:inherit;
+    transition:.2s;display:flex;align-items:center;gap:6px}
+  .skip:hover{color:var(--mut)}
+  .privacy{font-size:12px;color:var(--dim);display:flex;align-items:center;gap:7px}
+  .privacy svg{opacity:.7}
+
+  /* --- the key (SVG side) --- */
+  .keyrig{width:180px;height:340px;position:relative}
+  .tooth{transition:.7s var(--ease)}
+  .tooth.lit{fill:var(--gold);filter:drop-shadow(0 0 8px var(--gold))}
+  .keyglow{opacity:0;transition:1s var(--ease)}
+  .keyglow.on{opacity:1}
+  .sidecap{position:absolute;bottom:26px;left:0;right:0;text-align:center;color:var(--mut);font-size:12.5px;padding:0 24px}
+  .sidecap b{color:var(--gold);font-weight:600}
+
+  /* --- reveal / passport card --- */
+  .reveal{text-align:center;padding:44px 40px;width:100%}
+  .reveal .eyebrow{margin-bottom:18px}
+  .passport{margin:0 auto;width:min(460px,90%);text-align:left;border-radius:16px;position:relative;
+    background:linear-gradient(155deg,rgba(245,196,81,.14),rgba(139,124,255,.10) 60%,rgba(255,255,255,.03));
+    border:1px solid var(--line-2);padding:26px 26px 22px;overflow:hidden;
+    box-shadow:0 30px 80px -30px #000,inset 0 1px 0 rgba(255,255,255,.12);
+    transform:perspective(1200px) rotateX(0deg);transition:transform .3s var(--ease)}
+  .passport::after{content:"";position:absolute;inset:0;background:
+    radial-gradient(120px 120px at var(--mx,80%) var(--my,-10%),rgba(255,255,255,.18),transparent 70%);pointer-events:none}
+  .pp-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .pp-badge{display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:600}
+  .pp-chip{width:34px;height:26px;border-radius:5px;background:linear-gradient(135deg,#f5c451,#b98a1e);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.5);position:relative}
+  .pp-chip::before{content:"";position:absolute;inset:5px;border:1px solid rgba(0,0,0,.25);border-radius:2px}
+  .pp-name{font-family:'Instrument Serif',serif;font-size:34px;line-height:1;margin-bottom:4px}
+  .pp-role{color:var(--mut);font-size:14px;margin-bottom:18px}
+  .pp-row{padding:11px 0;border-top:1px solid rgba(255,255,255,.08);display:grid;grid-template-columns:76px 1fr;gap:12px;align-items:start}
+  .pp-row .k{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:600;padding-top:2px}
+  .pp-row .v{font-size:14px;color:var(--ink);line-height:1.45}
+  .pp-row .v.muted{color:var(--dim);font-style:italic}
+  .reveal .sub{color:var(--mut);font-size:15px;margin:24px auto 4px;max-width:420px;line-height:1.5}
+
+  /* --- magic moment (chat) --- */
+  .magic{width:100%;display:grid;grid-template-columns:1fr;gap:0;min-height:520px}
+  .mtop{text-align:center;padding:34px 40px 8px}
+  .mtop h2{font-size:clamp(28px,3.8vw,40px)}
+  .mtop h2 em{font-style:italic;color:var(--violet)}
+  .mtop p{color:var(--mut);font-size:14.5px;margin-top:8px}
+  .chatwin{margin:14px 40px 40px;border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    background:rgba(0,0,0,.28);display:flex;flex-direction:column;min-height:270px}
+  .chatbar{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.02)}
+  .tl{display:flex;gap:6px}.tl i{width:10px;height:10px;border-radius:50%;background:#3a3a44}
+  .chatbar b{font-size:12.5px;color:var(--mut);font-weight:500;margin-left:6px;display:flex;align-items:center;gap:7px}
+  .pill{font-size:10.5px;color:var(--violet);border:1px solid var(--violet-soft);background:var(--violet-soft);padding:2px 8px;border-radius:20px}
+  .msgs{padding:20px;display:flex;flex-direction:column;gap:14px;flex:1}
+  .msg{max-width:82%;font-size:14.5px;line-height:1.5;padding:12px 15px;border-radius:14px;opacity:0;transform:translateY(8px);animation:pop .5s var(--ease) forwards}
+  .msg.you{align-self:flex-end;background:var(--panel-2);border:1px solid var(--line-2);border-bottom-right-radius:5px}
+  .msg.ai{align-self:flex-start;background:linear-gradient(160deg,rgba(139,124,255,.16),rgba(139,124,255,.06));
+    border:1px solid var(--violet-soft);border-bottom-left-radius:5px}
+  .msg.ai b{color:var(--violet)}
+  @keyframes pop{to{opacity:1;transform:none}}
+  .typing{display:inline-flex;gap:4px;align-items:center}
+  .typing i{width:6px;height:6px;border-radius:50%;background:var(--violet);animation:blink 1.2s infinite}
+  .typing i:nth-child(2){animation-delay:.2s}.typing i:nth-child(3){animation-delay:.4s}
+  @keyframes blink{0%,60%,100%{opacity:.3}30%{opacity:1}}
+
+  /* --- control panel --- */
+  .ctrl{padding:38px 44px;width:100%}
+  .ctrl h2{font-size:clamp(26px,3.6vw,36px);margin-bottom:6px}
+  .ctrl h2 em{font-style:italic;color:var(--gold)}
+  .ctrl .lede{color:var(--mut);font-size:14.5px;margin-bottom:26px;max-width:560px;line-height:1.5}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:26px;align-items:start}
+  .tool{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-top:1px solid var(--line)}
+  .tool:first-child{border-top:none}
+  .tool .tn{display:flex;align-items:center;gap:11px;font-size:14.5px}
+  .tool .tn .av{width:26px;height:26px;border-radius:7px;display:grid;place-items:center;font-size:12px;font-weight:700;color:#0a0a0a}
+  .tool .sees{font-size:12px;color:var(--dim);margin-top:2px}
+  .tag{font-size:11px;color:var(--mut);background:var(--panel-2);border:1px solid var(--line);padding:3px 9px;border-radius:16px}
+  .filebox{background:rgba(0,0,0,.32);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .filebar{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-bottom:1px solid var(--line);font-size:12px;color:var(--mut)}
+  .filebar .fn{display:flex;align-items:center;gap:8px;font-family:ui-monospace,monospace;color:var(--gold)}
+  pre{padding:14px 15px;font-family:ui-monospace,'SF Mono',monospace;font-size:12px;line-height:1.65;color:#c9c7d4;
+    white-space:pre-wrap;max-height:220px;overflow:auto}
+  pre .h{color:var(--gold)}pre .c{color:var(--dim)}
+  .ctrl .foot{display:flex;align-items:center;justify-content:space-between;margin-top:26px;gap:16px;flex-wrap:wrap}
+  .ctrl .foot p{color:var(--dim);font-size:12.5px;max-width:440px;line-height:1.5}
+
+  .restart{position:fixed;bottom:22px;right:26px;z-index:6;font-size:12.5px;color:var(--dim);
+    background:var(--panel);border:1px solid var(--line);padding:8px 14px;border-radius:20px;cursor:pointer;
+    backdrop-filter:blur(10px);transition:.2s}
+  .restart:hover{color:var(--ink);border-color:var(--line-2)}
+
+  @media(max-width:840px){
+    .qwrap,.grid2{grid-template-columns:1fr}.qside{display:none}
+    .qmain{padding:36px 28px}.ctrl,.reveal,.mtop{padding-left:26px;padding-right:26px}
+    .chatwin{margin:14px 22px 30px}
+  }
+</style>
+</head>
+<body>
+  <div class="aurora"><div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div></div>
+  <div class="grain"></div>
+  <div class="brand"><span class="dot"></span>USRKey <small>&nbsp;/ prototype</small></div>
+  <div class="restart" id="restart" style="display:none">↺ start over</div>
+
+  <div class="stage" id="stage"></div>
+
+<script>
+/* ---------- key SVG (bow + 4 teeth) ---------- */
+function keySVG(lit=0, glow=false){
+  const tooth=(y,i)=>`<rect class="tooth ${i<lit?'lit':''}" x="86" y="${y}" width="${i%2?26:18}" height="15" rx="3" fill="rgba(255,255,255,.14)"/>`;
+  return `<svg class="keyrig" viewBox="0 0 180 340" fill="none">
+    <g class="keyglow ${glow?'on':''}"><circle cx="90" cy="72" r="70" fill="url(#g)"/></g>
+    <defs><radialGradient id="g"><stop offset="0" stop-color="#f5c451" stop-opacity=".5"/><stop offset="1" stop-color="#f5c451" stop-opacity="0"/></radialGradient></defs>
+    <circle cx="90" cy="72" r="40" stroke="${glow?'#f5c451':'rgba(255,255,255,.5)'}" stroke-width="9" fill="none" style="transition:.7s"/>
+    <circle cx="90" cy="72" r="16" stroke="${glow?'#f5c451':'rgba(255,255,255,.35)'}" stroke-width="7" fill="none" style="transition:.7s"/>
+    <rect x="84" y="110" width="12" height="180" rx="4" fill="${glow?'#f5c451':'rgba(255,255,255,.5)'}" style="transition:.7s"/>
+    ${tooth(210,0)}${tooth(232,1)}${tooth(254,2)}${tooth(276,3)}
+  </svg>`;
+}
+
+/* ---------- questions ---------- */
+const QS=[
+  {key:'identity',n:'01 · Identity',h:'Who <em>are</em> you?',hint:'Your name and what you do — the introduction you wish every AI already had.',
+   ph:"Chad — founder building USRKey, a portable AI-context tool. Based in US Central.",
+   chips:['Founder','Designer','Engineer','Writer','Student'],cap:'Only what you type here is shared. Nothing is inferred.'},
+  {key:'stack',n:'02 · Your world',h:'What&rsquo;s your <em>world</em>?',hint:'The tools you live in and how you like to work — so an agent is useful on day one, not day five.',
+   ph:"TypeScript / Node, SQLite. Cursor + Claude Code. I like terse answers and the diff, not the whole file.",
+   chips:['Show me diffs','Terse first','Plan before code','No unasked refactors'],cap:'This is the context agents reuse the most.'},
+  {key:'now',n:'03 · Right now',h:'What&rsquo;s true <em>this week</em>?',hint:'Your current focus. This is the page that keeps your key feeling alive — update it often.',
+   ph:"Launching USRKey. Recording the demo this week. Async-only Thu–Sun.",
+   chips:['Launching soon','Deep in a build','Traveling','Crunch mode'],cap:'Goes stale on purpose — a nudge reminds you to refresh it.'},
+  {key:'bounds',n:'04 · Boundaries',h:'What should an AI <em>never</em> do?',hint:'The page that makes the rest safe to share. This one is never handed out without your say-so.',
+   ph:"Don't infer my mood or health. Never store anything about my family. Correct me directly — don't soften it.",
+   chips:["Don't guess my mood","Never mention family","No financial figures","Ask if unsure"],cap:'Held privately. Agents may read it, never edit it.'}
+];
+
+const state={identity:'',stack:'',now:'',bounds:''};
+let step=0; // 0 welcome, 1-4 questions, 5 reveal, 6 magic, 7 control
+const stage=document.getElementById('stage');
+const restart=document.getElementById('restart');
+
+function firstName(){const s=(state.identity||'there').trim();const m=s.match(/[A-Z][a-z]+/);return m?m[0]:(s.split(/[\s,—-]/)[0]||'there');}
+function esc(t){return (t||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+function firstClause(t,fallback){if(!t)return fallback;const c=t.split(/[.\n—;]/)[0].trim();return c||fallback;}
+
+/* ---------- render ---------- */
+function render(dir=1){
+  const prev=stage.querySelector('.screen.on');
+  if(prev){prev.classList.remove('on');prev.classList.add('out');setTimeout(()=>prev.remove(),480);}
+  const el=document.createElement('div');el.className='screen';
+  el.innerHTML=view();
+  stage.appendChild(el);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('on')));
+  restart.style.display=step>0?'block':'none';
+  wire(el);
+}
+
+function view(){
+  if(step===0) return welcome();
+  if(step>=1&&step<=4) return question(step-1);
+  if(step===5) return reveal();
+  if(step===6) return magic();
+  if(step===7) return control();
+}
+
+function welcome(){return `<div class="welcome">
+  ${keySVG(0,false).replace('class="keyrig"','class="keyrig keyhero" style="width:110px;height:200px"')}
+  <div class="eyebrow">Your context, your key</div>
+  <h1>Every AI should<br>already <em>know you</em>.</h1>
+  <p>Answer four questions — share only what you want. Then any AI, anywhere, greets you knowing exactly that much. Nothing more.</p>
+  <button class="btn" data-go="1">Forge your key →</button>
+</div>`;}
+
+function question(i){const q=QS[i];
+  const teeth='<div class="steps">'+[0,1,2,3].map(k=>`<i class="${k<i?'done':k===i?'cur':''}"></i>`).join('')+'</div>';
+  return `<div class="card"><div class="qwrap">
+    <div class="qmain">
+      <div class="qtop">${teeth}<div class="privacy">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 2l7 4v6c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-4z" stroke="#9a98a6" stroke-width="1.6"/></svg>
+        stays on your device</div></div>
+      <div class="qbody">
+        <div class="qn">${q.n}</div>
+        <h2>${q.h}</h2>
+        <div class="qhint">${q.hint}</div>
+        <div class="field"><textarea id="ans" rows="3" placeholder="${q.ph}">${esc(state[q.key])}</textarea>
+          <div class="chips">${q.chips.map(c=>`<span class="chip">${c}</span>`).join('')}</div>
+        </div>
+      </div>
+      <div class="qfoot">
+        <button class="skip" data-skip="1">Skip — I'd rather not share this</button>
+        <button class="btn sm" data-next="1">${i<3?'Continue →':'Forge the key →'}</button>
+      </div>
+    </div>
+    <div class="qside">${keySVG(i,false)}<div class="sidecap">${q.cap}</div></div>
+  </div></div>`;}
+
+function reveal(){
+  const name=firstName();
+  const role=firstClause(state.identity,'—').replace(new RegExp('^'+name+'[\\s,—-]*','i'),'')||'Your context, carried';
+  const row=(k,v,ph)=>`<div class="pp-row"><div class="k">${k}</div><div class="v ${v?'':'muted'}">${v?esc(v):ph}</div></div>`;
+  return `<div class="reveal">
+    <div class="eyebrow">Your key is forged</div>
+    <div class="passport" id="pp">
+      <div class="pp-top"><div class="pp-badge"><span class="pp-chip"></span>USRKey</div>
+        <div style="font-size:11px;color:var(--dim);letter-spacing:.1em">CONTEXT CARD</div></div>
+      <div class="pp-name">${esc(name)}</div>
+      <div class="pp-role">${esc(role)}</div>
+      ${row('Works in',state.stack,'— skipped —')}
+      ${row('Right now',state.now,'— skipped —')}
+      ${row('Boundaries',state.bounds?'Private · read-only to agents':'','— skipped —')}
+    </div>
+    <p class="sub">This is what you chose to share — no more. Watch a brand-new AI meet you.</p>
+    <button class="btn" data-go="6" style="margin-top:14px">See it in action →</button>
+  </div>`;}
+
+function magic(){
+  return `<div class="magic">
+    <div class="mtop"><div class="eyebrow" style="color:var(--violet)">The moment</div>
+      <h2>A fresh AI. <em>No introduction.</em></h2>
+      <p>A model you&rsquo;ve never used — it only sees your USRKey card.</p></div>
+    <div class="chatwin">
+      <div class="chatbar"><span class="tl"><i></i><i></i><i></i></span>
+        <b>New chat &nbsp;<span class="pill">USRKey attached</span></b></div>
+      <div class="msgs" id="msgs"></div>
+    </div>
+  </div>`;}
+
+function control(){
+  const name=firstName();
+  const md=`<span class="c"># identity</span>
+${esc(state.identity||'(skipped)')}
+
+<span class="h"># stack</span>
+${esc(state.stack||'(skipped)')}
+
+<span class="h"># now</span>
+${esc(state.now||'(skipped)')}
+
+<span class="h"># boundaries</span> <span class="c">(private)</span>
+${esc(state.bounds||'(skipped)')}`;
+  const tool=(av,color,n,sees)=>`<div class="tool"><div class="tn">
+    <div class="av" style="background:${color}">${av}</div><div><div>${n}</div><div class="sees">${sees}</div></div></div>
+    <span class="tag">editable</span></div>`;
+  return `<div class="card"><div class="ctrl">
+    <div class="eyebrow">You&rsquo;re in control</div>
+    <h2 style="margin-top:10px">One card. <em>You</em> decide who sees what.</h2>
+    <div class="lede">Every agent gets only the pages you grant it — and boundaries are never handed out automatically. Change your mind anytime; nothing is locked in, nothing leaves your device unless you say so.</div>
+    <div class="grid2">
+      <div>
+        ${tool('C','linear-gradient(135deg,#f5c451,#e0a020)','Claude','identity · stack · now · history')}
+        ${tool('⌘','linear-gradient(135deg,#8b7cff,#6a4bff)','Cursor','identity · stack · now')}
+        ${tool('G','linear-gradient(135deg,#63e6e2,#28b7b2)','ChatGPT (web)','identity · stack')}
+        ${tool('+','linear-gradient(135deg,#4a4a55,#2a2a33);color:#fff','Anything else','identity only')}
+        <div style="margin-top:16px;font-size:12.5px;color:var(--dim);display:flex;align-items:center;gap:8px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2l7 4v6c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-4z" stroke="#f5c451" stroke-width="1.5"/></svg>
+          Boundaries stay private — readable by agents, never editable, never in a default bundle.</div>
+      </div>
+      <div class="filebox">
+        <div class="filebar"><span class="fn">◆ ${name.toLowerCase()}.usrkey.md</span><span>the whole product, underneath</span></div>
+        <pre>${md}</pre>
+      </div>
+    </div>
+    <div class="foot">
+      <p>That&rsquo;s it. A file you own, wrapped so it feels like magic — carried to every AI you touch, showing only what you chose.</p>
+      <button class="btn sm" data-go="0">↺ Forge another</button>
+    </div>
+  </div></div>`;}
+
+/* ---------- interactions ---------- */
+function wire(el){
+  el.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{step=+b.dataset.go;render();});
+  el.querySelectorAll('[data-next]').forEach(b=>b.onclick=()=>{saveAns(el);step++;render();});
+  el.querySelectorAll('[data-skip]').forEach(b=>b.onclick=()=>{state[QS[step-1].key]='';step++;render();});
+  const ta=el.querySelector('#ans');
+  if(ta){
+    setTimeout(()=>ta.focus(),520);
+    el.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{
+      ta.value=(ta.value.trim()?ta.value.trim()+', ':'')+c.textContent; ta.focus();});
+    ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){saveAns(el);step++;render();}});
+  }
+  const pp=el.querySelector('#pp');
+  if(pp)pp.addEventListener('mousemove',e=>{const r=pp.getBoundingClientRect();
+    const x=(e.clientX-r.left)/r.width,y=(e.clientY-r.top)/r.height;
+    pp.style.transform=`perspective(1200px) rotateY(${(x-.5)*8}deg) rotateX(${(.5-y)*8}deg)`;
+    pp.style.setProperty('--mx',x*100+'%');pp.style.setProperty('--my',y*100+'%');});
+  if(pp)pp.addEventListener('mouseleave',()=>pp.style.transform='perspective(1200px)');
+  if(el.querySelector('#msgs'))runChat(el.querySelector('#msgs'));
+}
+function saveAns(el){const ta=el.querySelector('#ans');if(ta)state[QS[step-1].key]=ta.value.trim();}
+if(document.querySelector('#restart'))restart.onclick=()=>{step=0;render();};
+
+/* ---------- the magic-moment script ---------- */
+function runChat(box){
+  const name=firstName();
+  const stack=firstClause(state.stack,'');
+  const now=firstClause(state.now,'');
+  const bound=firstClause(state.bounds,'');
+  const you=`<div class="msg you">hey</div>`;
+  let aiParts=[`Hey <b>${esc(name)}</b> — good to see you.`];
+  if(stack)aiParts.push(`I&rsquo;ve got your setup (${esc(stack.toLowerCase())}), so I&rsquo;ll skip the onboarding questions.`);
+  if(now)aiParts.push(`And I know you&rsquo;re on: <b>${esc(now.toLowerCase())}</b>.`);
+  aiParts.push(bound?`I&rsquo;ll respect your boundaries too. Where do you want to start?`:`Where do you want to start?`);
+  const ai=`<div class="msg ai">${aiParts.join(' ')}</div>`;
+  box.innerHTML=you;
+  setTimeout(()=>{
+    const t=document.createElement('div');t.className='msg ai';
+    t.innerHTML=`<span class="typing"><i></i><i></i><i></i></span>`;box.appendChild(t);
+    setTimeout(()=>{t.outerHTML=ai;
+      setTimeout(()=>{const cta=document.createElement('div');
+        cta.style.cssText='text-align:center;margin-top:6px';
+        cta.innerHTML=`<button class="btn sm" data-go="7" style="margin-top:8px">It just knew. Now you&rsquo;re in control →</button>`;
+        box.parentElement.appendChild(cta);
+        cta.querySelector('button').onclick=()=>{step=7;render();};},700);
+    },1400);
+  },700);
+}
+
+render();
+</script>
+</body>
+</html>
