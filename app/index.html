@@ -3,327 +3,247 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>USRKey — issue your credential</title>
+<title>USRKey</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;560;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
   :root{
-    /* security-document palette — cool document stock, deep intaglio ink, bronze foil, seal red */
-    --paper:#e9e4d6; --paper-2:#e2dccb; --paper-edge:#d6cfba;
-    --ink:#13302a; --ink-2:#33534a; --ink-3:#6d7f74;
-    --foil:#9a7b44; --foil-lo:#9a7b4426; --seal:#8c2b26; --seal-lo:#8c2b2618;
-    --cover:#15243b; --cover-foil:#c3a15f;
-    --serif:'Fraunces',Georgia,'Times New Roman',serif;
-    --mono:'IBM Plex Mono',ui-monospace,'SF Mono',Menlo,monospace;
-    --sans:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
-    --ease:cubic-bezier(.2,.7,.2,1);
+    --bg:#0a0a0b; --bg-2:#0e0e10; --surf:#151517; --surf-2:#1c1c1f;
+    --line:rgba(255,255,255,.08); --line-2:rgba(255,255,255,.14);
+    --ink:#f4f4f6; --mut:#8b8b93; --dim:#54545c;
+    --sans:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --mono:'JetBrains Mono',ui-monospace,'SF Mono','SFMono-Regular',Menlo,monospace;
+    --ease:cubic-bezier(.2,.8,.2,1);
+    /* holographic accent — used only on the object */
+    --h1:#7cf3d0; --h2:#8ea2ff; --h3:#e58bff; --h4:#ffd27c;
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
-  body{
-    font-family:var(--sans); background:var(--paper); color:var(--ink);
-    -webkit-font-smoothing:antialiased; overflow:hidden;
-    display:grid; place-items:center; min-height:100dvh;
-    background-image:
-      radial-gradient(120vw 90vh at 50% -20%,rgba(19,48,42,.05),transparent 60%),
-      repeating-linear-gradient(0deg,transparent 0 3px,rgba(19,48,42,.018) 3px 4px);
-  }
-  /* engraved rule / microprint */
-  .micro{font-family:var(--mono);font-size:8px;letter-spacing:.34em;color:var(--ink-3);
-    text-transform:uppercase;white-space:nowrap;overflow:hidden;user-select:none}
-  .rule{height:1px;background:repeating-linear-gradient(90deg,var(--ink) 0 4px,transparent 4px 7px);opacity:.35}
+  body{font-family:var(--sans);background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;
+    overflow:hidden;display:grid;place-items:center;min-height:100dvh;
+    background-image:radial-gradient(140vw 100vh at 50% -30%,#141418,transparent 60%);}
+  ::selection{background:rgba(142,162,255,.28)}
 
-  .frame{position:fixed;inset:16px;border:1px solid var(--ink);opacity:.16;pointer-events:none;z-index:1}
-  .frame::before{content:"";position:absolute;inset:5px;border:1px solid var(--ink);opacity:.6}
-  .mark{position:fixed;z-index:2;font-family:var(--mono);font-size:9px;letter-spacing:.28em;color:var(--ink-3);text-transform:uppercase}
-  .mark.tl{top:26px;left:30px}.mark.tr{top:26px;right:30px}.mark.bl{bottom:26px;left:30px}.mark.br{bottom:26px;right:30px}
-
-  .stage{position:relative;z-index:3;width:min(1060px,93vw);height:min(690px,92dvh);display:grid;place-items:center}
-  .screen{position:absolute;inset:0;display:grid;place-items:center;
-    opacity:0;transform:translateY(10px);pointer-events:none;
-    transition:opacity .55s var(--ease),transform .55s var(--ease)}
+  .stage{position:relative;z-index:2;width:min(1080px,94vw);height:min(700px,92dvh);display:grid;place-items:center}
+  .screen{position:absolute;inset:0;display:grid;place-items:center;opacity:0;transform:translateY(8px) scale(.995);
+    pointer-events:none;transition:opacity .5s var(--ease),transform .5s var(--ease)}
   .screen.on{opacity:1;transform:none;pointer-events:auto}
-  .screen.out{opacity:0;transform:translateY(-10px)}
+  .screen.out{opacity:0;transform:translateY(-8px) scale(.995)}
 
-  /* sheet = a document page */
-  .sheet{width:100%;background:var(--paper);border:1px solid var(--paper-edge);position:relative;
-    box-shadow:0 1px 0 rgba(255,255,255,.5) inset, 0 30px 70px -46px rgba(19,48,42,.6);}
-  .sheet::before{content:"";position:absolute;inset:8px;border:1px solid var(--ink);opacity:.14;pointer-events:none}
-
-  h1,h2,.serif{font-family:var(--serif);font-weight:400;line-height:1.02;letter-spacing:-.01em;text-wrap:balance}
-  .label{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:var(--foil);font-weight:600}
-  .sub-ink{color:var(--ink-2)}
-
-  .btn{appearance:none;cursor:pointer;font-family:var(--mono);font-weight:600;font-size:12px;letter-spacing:.14em;
-    text-transform:uppercase;color:var(--paper);background:var(--ink);border:1px solid var(--ink);
-    padding:14px 24px;transition:.25s var(--ease);position:relative}
-  .btn:hover{background:#0c221d;transform:translateY(-1px)}
+  .mono{font-family:var(--mono)}
+  .kicker{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--mut)}
+  .kicker .b{color:var(--h1)}
+  h1{font-size:clamp(44px,7.4vw,86px);line-height:.98;letter-spacing:-.035em;font-weight:600}
+  h2{font-size:clamp(30px,4.6vw,52px);line-height:1;letter-spacing:-.03em;font-weight:600}
+  .btn{appearance:none;cursor:pointer;font-family:var(--sans);font-weight:560;font-size:14px;letter-spacing:-.01em;
+    color:#0a0a0b;background:var(--ink);border:1px solid var(--ink);padding:12px 20px;border-radius:10px;
+    transition:.22s var(--ease);display:inline-flex;align-items:center;gap:8px}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 8px 24px -10px rgba(255,255,255,.3)}
   .btn:active{transform:none}
-  .btn.foil{background:transparent;color:var(--ink);border-color:var(--ink)}
-  .btn.foil:hover{background:var(--foil-lo);border-color:var(--foil);color:var(--ink)}
-  .btn:focus-visible{outline:2px solid var(--foil);outline-offset:3px}
-  .btn:disabled{opacity:.4;cursor:not-allowed}
-  .lnk{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--ink-3);background:none;border:none;cursor:pointer;
-    text-transform:uppercase;transition:.2s;display:inline-flex;align-items:center;gap:7px}
-  .lnk:hover{color:var(--ink-2)}
-  .lnk:focus-visible{outline:2px solid var(--foil);outline-offset:3px}
+  .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line-2)}
+  .btn.ghost:hover{background:var(--surf-2);box-shadow:none}
+  .btn:focus-visible{outline:2px solid var(--h2);outline-offset:3px}
+  .lnk{font-family:var(--sans);font-size:13px;color:var(--dim);background:none;border:none;cursor:pointer;transition:.2s;letter-spacing:-.01em}
+  .lnk:hover{color:var(--mut)}
+  .lnk:focus-visible{outline:2px solid var(--h2);outline-offset:3px;border-radius:4px}
 
-  /* ---- COVER (passport cover) ---- */
-  .cover{width:100%;background:
-      radial-gradient(90% 120% at 50% -10%,#1c2f4d,var(--cover) 62%);
-    border:1px solid #0c1626;position:relative;overflow:hidden;
-    display:grid;grid-template-rows:1fr auto;min-height:560px;
-    box-shadow:0 40px 90px -50px #000, inset 0 0 0 1px rgba(195,161,95,.12)}
-  .cover::before{content:"";position:absolute;inset:22px;border:1.5px solid var(--cover-foil);opacity:.5}
-  .cover .foilwrap{align-self:center;justify-self:center;text-align:center;padding:0 30px;position:relative;z-index:2}
-  .cover canvas{position:absolute;inset:0;margin:auto;opacity:.9}
-  .cover .label{color:var(--cover-foil)}
-  .cover h1{color:#f2ead6;font-size:clamp(40px,7vw,72px);margin:16px 0 12px;
-    text-shadow:0 1px 0 rgba(0,0,0,.4)}
-  .cover h1 em{font-style:italic;color:var(--cover-foil)}
-  .cover p{color:#b9c2d4;font-size:16px;max-width:440px;margin:0 auto 28px;line-height:1.55;font-family:var(--sans)}
-  .cover .foot{position:relative;z-index:2;border-top:1px solid rgba(195,161,95,.25);
-    display:flex;justify-content:space-between;align-items:center;padding:14px 26px}
-  .cover .foot .micro{color:#7d8aa0}
-  .emblem{width:96px;height:96px;margin:0 auto}
+  /* ---------- WELCOME ---------- */
+  .welcome{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center;width:100%;padding:0 8px}
+  .welcome .copy{max-width:460px}
+  .welcome h1{margin:18px 0 20px}
+  .welcome h1 .g{background:linear-gradient(96deg,var(--h1),var(--h2) 46%,var(--h3));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .welcome p{color:var(--mut);font-size:16.5px;line-height:1.55;margin-bottom:30px;letter-spacing:-.01em}
+  .welcome .row{display:flex;align-items:center;gap:16px}
+  .welcome .meta{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.02em;margin-top:22px;display:flex;gap:14px}
+  .welcome .meta b{color:var(--mut);font-weight:400}
+  .herostage{position:relative;height:420px;display:grid;place-items:center}
 
-  /* ---- QUESTION ---- */
-  .qwrap{display:grid;grid-template-columns:1.32fr .68fr;min-height:540px}
+  /* ---------- holographic card ---------- */
+  .kc{position:relative;width:310px;height:196px;border-radius:18px;transform-style:preserve-3d;
+    transition:transform .1s linear;will-change:transform}
+  .kc .face{position:absolute;inset:0;border-radius:18px;overflow:hidden;
+    background:linear-gradient(150deg,#161619,#0e0e10);border:1px solid var(--line-2);
+    box-shadow:0 30px 60px -24px #000, inset 0 1px 0 rgba(255,255,255,.06)}
+  .kc .holo{position:absolute;inset:0;opacity:.9;mix-blend-mode:screen;
+    background:conic-gradient(from var(--a,0deg) at 30% 20%,
+      transparent, #7cf3d022 12%, #8ea2ff33 26%, #e58bff2e 40%, transparent 55%, #ffd27c22 72%, transparent 90%);
+    filter:blur(2px)}
+  .kc .sheen{position:absolute;inset:-2px;border-radius:18px;padding:1px;pointer-events:none;
+    background:conic-gradient(from var(--a,0deg),#7cf3d0,#8ea2ff,#e58bff,#ffd27c,#7cf3d0);
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.55}
+  .kc .grid{position:absolute;inset:0;opacity:.5;
+    background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+    background-size:22px 22px;-webkit-mask:radial-gradient(120% 90% at 70% 10%,#000,transparent 75%)}
+  .kc .content{position:absolute;inset:0;padding:18px 20px;display:flex;flex-direction:column;justify-content:space-between}
+  .kc .top{display:flex;justify-content:space-between;align-items:flex-start}
+  .kc .brand{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--ink);text-transform:uppercase}
+  .kc .chip{width:34px;height:26px;border-radius:6px;background:linear-gradient(135deg,#3a3a40,#232327);
+    border:1px solid var(--line-2);position:relative}
+  .kc .chip::after{content:"";position:absolute;inset:5px;border:1px solid rgba(255,255,255,.12);border-radius:3px}
+  .kc .nm{font-size:22px;font-weight:600;letter-spacing:-.02em;line-height:1}
+  .kc .sub{font-family:var(--mono);font-size:10px;color:var(--mut);letter-spacing:.08em;margin-top:6px}
+  .kc .bars{display:flex;gap:5px;margin-top:12px}
+  .kc .bars i{height:4px;width:26px;border-radius:2px;background:var(--surf-2);transition:.5s var(--ease)}
+  .kc .bars i.on{background:linear-gradient(90deg,var(--h1),var(--h2));box-shadow:0 0 10px rgba(124,243,208,.4)}
+  .heroglow{position:absolute;width:340px;height:230px;border-radius:24px;filter:blur(60px);opacity:.4;z-index:-1;
+    background:conic-gradient(from 0deg,#7cf3d0,#8ea2ff,#e58bff,#ffd27c,#7cf3d0);animation:spin 8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ---------- QUESTION ---------- */
+  .panel{width:100%;background:var(--bg-2);border:1px solid var(--line);border-radius:20px;overflow:hidden;
+    box-shadow:0 40px 100px -50px #000}
+  .qwrap{display:grid;grid-template-columns:1.3fr .7fr;min-height:520px}
   .qmain{padding:44px 46px;display:flex;flex-direction:column}
-  .qhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:auto}
-  .field-index{font-family:var(--mono);font-size:11px;letter-spacing:.18em;color:var(--ink-3);text-transform:uppercase}
-  .stamps{display:flex;gap:6px}
-  .stamps i{width:9px;height:9px;border:1.5px solid var(--ink-3);border-radius:50%;transition:.4s var(--ease)}
-  .stamps i.done{background:var(--seal);border-color:var(--seal)}
-  .stamps i.cur{border-color:var(--foil);box-shadow:0 0 0 3px var(--foil-lo)}
+  .qtop{display:flex;align-items:center;justify-content:space-between;margin-bottom:auto}
+  .prog{display:flex;gap:6px}
+  .prog i{height:3px;width:34px;border-radius:2px;background:var(--surf-2);transition:.45s var(--ease)}
+  .prog i.done{background:var(--ink)}
+  .prog i.cur{background:linear-gradient(90deg,var(--h1),var(--h2))}
+  .qidx{font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.14em}
   .qbody{margin:auto 0}
-  .qbody h2{font-size:clamp(30px,4.4vw,46px);margin:14px 0 12px}
-  .qbody h2 em{font-style:italic;color:var(--foil)}
-  .qhint{color:var(--ink-2);font-size:15px;line-height:1.55;max-width:440px;margin-bottom:24px;font-family:var(--sans)}
+  .qbody h2{margin:12px 0 12px}
+  .qbody h2 .g{background:linear-gradient(96deg,var(--h1),var(--h2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .qhint{color:var(--mut);font-size:15px;line-height:1.55;max-width:430px;margin-bottom:26px;letter-spacing:-.01em}
   .entry{position:relative}
-  .entry textarea{width:100%;background:transparent;border:none;border-bottom:1.5px solid var(--ink);
-    color:var(--ink);font-family:var(--serif);font-size:20px;line-height:1.5;padding:6px 2px 12px;resize:none;
-    transition:.25s}
-  .entry textarea:focus{outline:none;border-color:var(--foil)}
-  .entry textarea::placeholder{color:var(--ink-3);font-style:italic;opacity:.7}
-  .entry .cnt{position:absolute;right:2px;bottom:-20px;font-family:var(--mono);font-size:10px;color:var(--ink-3);letter-spacing:.1em}
-  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:26px}
-  .chip{font-family:var(--mono);font-size:11px;letter-spacing:.04em;color:var(--ink-2);background:transparent;
-    border:1px solid var(--paper-edge);padding:6px 11px;cursor:pointer;transition:.2s}
-  .chip:hover{border-color:var(--foil);color:var(--ink);background:var(--foil-lo)}
-  .qfoot{display:flex;align-items:center;justify-content:space-between;margin-top:34px;gap:16px}
-  .qside{background:linear-gradient(180deg,var(--paper-2),var(--paper));border-left:1px solid var(--paper-edge);
+  .entry textarea{width:100%;background:var(--surf);border:1px solid var(--line-2);border-radius:12px;
+    color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.5;padding:15px 16px;resize:none;
+    transition:.22s var(--ease);letter-spacing:-.01em}
+  .entry textarea:focus{outline:none;border-color:var(--h2);box-shadow:0 0 0 4px rgba(142,162,255,.14)}
+  .entry textarea::placeholder{color:var(--dim)}
+  .cnt{position:absolute;right:12px;bottom:10px;font-family:var(--mono);font-size:10px;color:var(--dim)}
+  .chips{display:flex;flex-wrap:wrap;gap:7px;margin-top:16px}
+  .chip{font-family:var(--sans);font-size:13px;color:var(--mut);background:var(--surf);border:1px solid var(--line);
+    padding:7px 13px;border-radius:20px;cursor:pointer;transition:.2s;letter-spacing:-.01em}
+  .chip:hover{color:var(--ink);border-color:var(--h2);background:rgba(142,162,255,.08)}
+  .qfoot{display:flex;align-items:center;justify-content:space-between;margin-top:32px;gap:16px}
+  .qside{background:radial-gradient(120% 80% at 60% 30%,#161619,var(--bg-2));border-left:1px solid var(--line);
     position:relative;display:grid;place-items:center;overflow:hidden}
-  .qside canvas{width:260px;height:260px}
-  .sidenote{position:absolute;bottom:22px;left:0;right:0;text-align:center;padding:0 26px}
-  .sidenote .micro{letter-spacing:.2em;color:var(--ink-3)}
-  .sidenote b{color:var(--seal);font-weight:600}
+  .qside .kc{transform:scale(.86)}
+  .sidenote{position:absolute;bottom:22px;left:0;right:0;text-align:center;padding:0 26px;
+    font-family:var(--mono);font-size:11px;color:var(--dim);letter-spacing:.02em;line-height:1.6}
+  .sidenote b{color:var(--h1)}
 
-  /* ---- CREDENTIAL (reveal) ---- */
-  .reveal{padding:34px 40px;width:100%;display:grid;justify-items:center;gap:18px}
-  .credential{width:min(560px,96%);background:
-      linear-gradient(158deg,#efe9db,#e4ddc9);border:1px solid var(--paper-edge);position:relative;overflow:hidden;
-    box-shadow:0 26px 60px -34px rgba(19,48,42,.65), inset 0 0 0 1px rgba(255,255,255,.4);
-    transform:perspective(1400px);transition:transform .25s var(--ease)}
-  .credential .guilloche{position:absolute;inset:0;opacity:.5;pointer-events:none}
-  .cr-pad{position:relative;padding:22px 24px 0}
-  .cr-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
-  .cr-issuer .label{color:var(--foil)}
-  .cr-issuer .t{font-family:var(--serif);font-size:15px;color:var(--ink);margin-top:3px}
-  .cr-type{font-family:var(--mono);font-size:9.5px;letter-spacing:.2em;color:var(--ink-3);text-transform:uppercase;text-align:right}
-  .cr-body{display:grid;grid-template-columns:1fr 84px;gap:16px;align-items:start}
-  .cr-name{font-family:var(--serif);font-size:38px;line-height:1;color:var(--ink);margin-bottom:3px}
-  .cr-role{font-family:var(--sans);font-size:13px;color:var(--ink-2);margin-bottom:14px}
-  .cr-fields{display:grid;gap:9px}
-  .cr-f{display:grid;grid-template-columns:74px 1fr;gap:12px;align-items:baseline}
-  .cr-f .k{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3)}
-  .cr-f .v{font-family:var(--serif);font-size:14px;color:var(--ink);line-height:1.4}
-  .cr-f .v.skip{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--ink-3);text-transform:uppercase}
-  .cr-seal{width:84px;height:84px;position:relative}
-  .cr-seal canvas{width:84px;height:84px}
-  .cr-seal .word{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--mono);
-    font-size:7.5px;letter-spacing:.14em;color:var(--seal);text-align:center;text-transform:uppercase;font-weight:600}
-  .mrz{margin-top:16px;background:repeating-linear-gradient(90deg,rgba(19,48,42,.05) 0 2px,transparent 2px 4px);
-    border-top:1px solid var(--ink);padding:9px 14px 12px}
-  .mrz div{font-family:var(--mono);font-size:12.5px;letter-spacing:.14em;color:var(--ink);white-space:nowrap;overflow:hidden;line-height:1.7}
-  .reveal .cap{font-family:var(--sans);color:var(--ink-2);font-size:14.5px;max-width:440px;text-align:center;line-height:1.5}
+  /* ---------- REVEAL ---------- */
+  .reveal{display:grid;justify-items:center;gap:22px;width:100%;padding:20px}
+  .reveal .kc{width:400px;height:252px}
+  .reveal .kc .nm{font-size:28px}
+  .reveal .rows{width:min(400px,92%);display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .reveal .rr{display:grid;grid-template-columns:96px 1fr;background:var(--bg-2);padding:11px 15px;gap:12px;align-items:baseline}
+  .reveal .rr .k{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+  .reveal .rr .v{font-size:14px;color:var(--ink);letter-spacing:-.01em}
+  .reveal .rr .v.skip{color:var(--dim);font-style:italic}
+  .reveal .cap{color:var(--mut);font-size:15px;max-width:440px;text-align:center;line-height:1.55;letter-spacing:-.01em}
 
-  /* ---- MAGIC (reader scans credential) ---- */
-  .magic{width:100%;padding:30px 40px 38px}
+  /* ---------- MAGIC ---------- */
+  .magic{width:100%;padding:26px 40px 34px}
   .magic .top{text-align:center;margin-bottom:16px}
-  .magic h2{font-size:clamp(28px,4vw,42px)}
-  .magic h2 em{font-style:italic;color:var(--foil)}
-  .magic .top p{font-family:var(--sans);color:var(--ink-2);font-size:14px;margin-top:8px}
-  .reader{border:1px solid var(--ink);background:var(--paper-2);position:relative;overflow:hidden}
-  .reader .rbar{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-bottom:1px solid var(--paper-edge)}
-  .reader .rbar .micro{color:var(--ink-3)}
-  .reader .rbar .live{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--seal);text-transform:uppercase}
-  .reader .rbar .live i{width:7px;height:7px;border-radius:50%;background:var(--seal);animation:pulse 1.4s infinite}
-  @keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
-  .scanline{padding:10px 14px;font-family:var(--mono);font-size:12px;letter-spacing:.12em;color:var(--ink-2);border-bottom:1px dashed var(--paper-edge);white-space:nowrap;overflow:hidden}
-  .scanline .ok{color:var(--foil)}
-  .msgs{padding:18px;display:flex;flex-direction:column;gap:12px;min-height:190px}
-  .msg{max-width:84%;font-size:15px;line-height:1.55;padding:11px 15px;opacity:0;transform:translateY(6px);
-    animation:pop .5s var(--ease) forwards}
-  .msg.you{align-self:flex-end;font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--ink-2);
-    border:1px solid var(--paper-edge);padding:8px 13px}
-  .msg.ai{align-self:flex-start;font-family:var(--serif);color:var(--ink);background:var(--paper);
-    border-left:2px solid var(--foil);padding-left:16px}
-  .msg.ai b{color:var(--seal);font-weight:600;font-style:normal}
+  .magic .top p{color:var(--mut);font-size:14px;margin-top:8px;letter-spacing:-.01em}
+  .magic h2 .g{background:linear-gradient(96deg,var(--h2),var(--h3));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .chatwin{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--bg-2)}
+  .cbar{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--line)}
+  .cbar .l{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--mut);letter-spacing:.04em}
+  .cbar .pill{font-family:var(--mono);font-size:10px;color:var(--h1);border:1px solid rgba(124,243,208,.3);
+    background:rgba(124,243,208,.08);padding:2px 9px;border-radius:20px;letter-spacing:.06em}
+  .msgs{padding:20px;display:flex;flex-direction:column;gap:13px;min-height:200px}
+  .msg{max-width:82%;font-size:15px;line-height:1.55;padding:11px 15px;border-radius:14px;letter-spacing:-.01em;
+    opacity:0;transform:translateY(6px);animation:pop .45s var(--ease) forwards}
+  .msg.you{align-self:flex-end;background:var(--surf-2);border:1px solid var(--line-2);border-bottom-right-radius:4px;color:var(--mut)}
+  .msg.ai{align-self:flex-start;background:var(--surf);border:1px solid var(--line);border-bottom-left-radius:4px}
+  .msg.ai b{background:linear-gradient(96deg,var(--h1),var(--h2));-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:600}
   @keyframes pop{to{opacity:1;transform:none}}
-  .typing{display:inline-flex;gap:4px}.typing i{width:6px;height:6px;border-radius:50%;background:var(--ink-3);animation:blink 1.1s infinite}
+  .typing{display:inline-flex;gap:4px}.typing i{width:6px;height:6px;border-radius:50%;background:var(--mut);animation:blink 1.1s infinite}
   .typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
   @keyframes blink{0%,60%,100%{opacity:.25}30%{opacity:1}}
 
-  /* ---- CONTROL (endorsements) ---- */
-  .ctrl{padding:36px 44px;width:100%}
-  .ctrl h2{font-size:clamp(26px,3.6vw,38px);margin:8px 0 6px}
-  .ctrl h2 em{font-style:italic;color:var(--foil)}
-  .ctrl .lede{font-family:var(--sans);color:var(--ink-2);font-size:14.5px;max-width:560px;line-height:1.55;margin-bottom:24px}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:30px;align-items:start}
-  .grants{display:grid}
-  .grant{display:flex;align-items:center;justify-content:space-between;padding:13px 0;border-top:1px solid var(--paper-edge)}
-  .grant:first-child{border-top:none}
-  .grant .who{display:flex;align-items:center;gap:11px}
-  .grant .who .m{width:30px;height:30px;border:1px solid var(--ink);display:grid;place-items:center;font-family:var(--mono);font-weight:600;font-size:12px;color:var(--ink)}
-  .grant .who .n{font-family:var(--serif);font-size:16px}
-  .grant .who .s{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;color:var(--ink-3);text-transform:uppercase;margin-top:2px}
-  .grant .st{font-family:var(--mono);font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--foil);
-    border:1px solid var(--foil);padding:3px 8px;transform:rotate(-3deg)}
-  .private{margin-top:14px;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--seal);
-    display:flex;gap:8px;align-items:flex-start;line-height:1.5}
-  .filebox{border:1px solid var(--ink)}
-  .filebox .fb{display:flex;align-items:center;justify-content:space-between;padding:9px 13px;border-bottom:1px solid var(--paper-edge)}
-  .filebox .fb .fn{font-family:var(--mono);font-size:11px;color:var(--foil);letter-spacing:.04em}
-  .filebox .fb .micro{color:var(--ink-3)}
-  pre{padding:14px 15px;font-family:var(--mono);font-size:11.5px;line-height:1.7;color:var(--ink);white-space:pre-wrap;
-    max-height:230px;overflow:auto;background:var(--paper)}
-  pre .h{color:var(--foil);font-weight:600}pre .c{color:var(--ink-3)}
+  /* ---------- CONTROL ---------- */
+  .ctrl{padding:38px 44px;width:100%}
+  .ctrl h2{margin:12px 0 8px}
+  .ctrl h2 .g{background:linear-gradient(96deg,var(--h1),var(--h2));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .ctrl .lede{color:var(--mut);font-size:15px;max-width:560px;line-height:1.55;margin-bottom:26px;letter-spacing:-.01em}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:start}
+  .tool{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-top:1px solid var(--line)}
+  .tool:first-child{border-top:none}
+  .tool .w{display:flex;align-items:center;gap:11px}
+  .tool .av{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-family:var(--mono);font-weight:600;font-size:12px;color:#0a0a0b}
+  .tool .n{font-size:15px;letter-spacing:-.01em}
+  .tool .s{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:2px;letter-spacing:.02em}
+  .tool .tag{font-family:var(--mono);font-size:10px;color:var(--h1);border:1px solid rgba(124,243,208,.3);background:rgba(124,243,208,.07);padding:3px 9px;border-radius:16px;letter-spacing:.04em}
+  .sealed{margin-top:14px;font-family:var(--mono);font-size:11px;color:var(--h3);display:flex;gap:8px;align-items:flex-start;line-height:1.55;letter-spacing:.01em}
+  .filebox{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surf)}
+  .fb{display:flex;align-items:center;justify-content:space-between;padding:10px 13px;border-bottom:1px solid var(--line)}
+  .fb .fn{font-family:var(--mono);font-size:11px;color:var(--h1);letter-spacing:.02em}
+  .fb .m{font-family:var(--mono);font-size:9px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase}
+  pre{padding:14px 15px;font-family:var(--mono);font-size:11.5px;line-height:1.7;color:#cfcfd6;white-space:pre-wrap;max-height:220px;overflow:auto}
+  pre .h{color:var(--h1)}pre .c{color:var(--dim)}
   .ctrl .foot{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-top:26px;flex-wrap:wrap}
-  .ctrl .foot p{font-family:var(--sans);color:var(--ink-3);font-size:12.5px;max-width:440px;line-height:1.55}
+  .ctrl .foot p{color:var(--dim);font-size:12.5px;max-width:440px;line-height:1.55;letter-spacing:-.01em}
 
-  .restart{position:fixed;bottom:26px;right:30px;z-index:6}
+  .restart{position:fixed;bottom:24px;right:28px;z-index:6}
+  .wm{position:fixed;top:22px;left:26px;z-index:5;font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--mut);display:flex;align-items:center;gap:8px}
+  .wm .d{width:7px;height:7px;border-radius:50%;background:linear-gradient(135deg,var(--h1),var(--h2))}
 
-  @media(max-width:860px){
-    .qwrap,.grid2{grid-template-columns:1fr}.qside{display:none}
-    .qmain,.ctrl,.reveal,.magic{padding-left:26px;padding-right:26px}
-    .mark{display:none}
-  }
-  @media (prefers-reduced-motion:reduce){*{animation:none !important;transition-duration:.01ms !important}}
+  @media(max-width:880px){.welcome,.qwrap,.grid2{grid-template-columns:1fr}.qside,.herostage{display:none}.qmain,.ctrl,.magic{padding:30px 26px}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition-duration:.01ms!important}}
 </style>
 </head>
 <body>
-  <div class="frame"></div>
-  <div class="mark tl">USRKEY · SELF-ISSUED</div>
-  <div class="mark tr">SPECIMEN</div>
-  <div class="mark bl">FORM 4Q · REV. A</div>
-  <div class="mark br" id="serialmark">NO. ————</div>
   <div class="stage" id="stage"></div>
-  <div class="restart" style="display:none"><button class="lnk" id="restart">↺ void &amp; reissue</button></div>
+  <div class="restart" style="display:none"><button class="lnk" id="restart">↺ start over</button></div>
 
 <script>
-/* ============ guilloché engine (canvas) ============ */
-function seal(canvas, ringsDone, partial, opts){
-  opts=opts||{};
-  const dpr=Math.min(window.devicePixelRatio||1,2);
-  const W=canvas.clientWidth||canvas.width, H=canvas.clientHeight||canvas.height;
-  canvas.width=W*dpr; canvas.height=H*dpr;
-  const ctx=canvas.getContext('2d'); ctx.scale(dpr,dpr);
-  ctx.clearRect(0,0,W,H);
-  const cx=W/2, cy=H/2, base=Math.min(W,H)/2-6;
-  const ink=opts.ink||'#13302a', foil=opts.foil||'#9a7b44', red=opts.seal||'#8c2b26';
-  // four concentric guilloché rosettes (hypotrochoid), one per answered field
-  const rings=[
-    {ro:base*0.98, ri:base*0.20, d:base*0.20, turns:36, col:ink,  a:0.55},
-    {ro:base*0.80, ri:base*0.13, d:base*0.15, turns:29, col:foil, a:0.70},
-    {ro:base*0.62, ri:base*0.17, d:base*0.11, turns:31, col:ink,  a:0.55},
-    {ro:base*0.44, ri:base*0.09, d:base*0.10, turns:23, col:red,  a:0.65}
-  ];
-  ctx.lineWidth=0.7;
-  for(let k=0;k<4;k++){
-    let frac=0;
-    if(k<ringsDone) frac=1;
-    else if(k===ringsDone) frac=partial;
-    if(frac<=0) continue;
-    const r=rings[k]; ctx.globalAlpha=r.a; ctx.strokeStyle=r.col; ctx.beginPath();
-    const steps=Math.floor(r.turns*70*frac), TAU=Math.PI*2, tot=r.turns*TAU;
-    for(let s=0;s<=steps;s++){
-      const t=(s/(r.turns*70))*TAU;
-      const rr=r.ro-r.ri;
-      const x=cx+rr*Math.cos(t)+r.d*Math.cos((rr/r.ri)*t);
-      const y=cy+rr*Math.sin(t)-r.d*Math.sin((rr/r.ri)*t);
-      s?ctx.lineTo(x,y):ctx.moveTo(x,y);
-    }
-    ctx.stroke();
-  }
-  // inner ring outline once anything drawn
-  if(ringsDone>0||partial>0){
-    ctx.globalAlpha=0.8; ctx.strokeStyle=foil; ctx.lineWidth=1.1;
-    ctx.beginPath(); ctx.arc(cx,cy,base*0.30,0,Math.PI*2); ctx.stroke();
-    ctx.globalAlpha=0.5; ctx.strokeStyle=ink; ctx.lineWidth=0.8;
-    ctx.beginPath(); ctx.arc(cx,cy,base*0.985,0,Math.PI*2); ctx.stroke();
-  }
-  ctx.globalAlpha=1;
+/* holographic card markup */
+function cardHTML(name,sub,bars,big){
+  const b=[0,1,2,3].map(i=>`<i class="${i<bars?'on':''}"></i>`).join('');
+  return `<div class="kc" ${big?'data-big="1"':''}>
+    <div class="face"><div class="holo"></div><div class="grid"></div></div>
+    <div class="sheen"></div>
+    <div class="content">
+      <div class="top"><span class="brand">USRKEY</span><span class="chip"></span></div>
+      <div>
+        <div class="nm">${name}</div>
+        <div class="sub">${sub}</div>
+        <div class="bars">${b}</div>
+      </div>
+    </div>
+  </div>`;
 }
-function animateSeal(canvas,ringsDone,opts){
-  if(matchMedia('(prefers-reduced-motion:reduce)').matches){seal(canvas,ringsDone+1,0,opts);return;}
-  let p=0, t0=null;
-  function step(ts){ if(!t0)t0=ts; p=Math.min(1,(ts-t0)/850);
-    seal(canvas,ringsDone,p,opts);
-    if(p<1) requestAnimationFrame(step);
-  }
-  requestAnimationFrame(step);
-}
-let coverRot;
-function spinSeal(canvas,opts){
-  if(matchMedia('(prefers-reduced-motion:reduce)').matches){seal(canvas,4,0,opts);return;}
-  seal(canvas,4,0,opts);
+function tiltCard(kc){
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+  const area=kc.closest('.herostage')||kc.parentElement;
+  let raf;
+  area.addEventListener('mousemove',e=>{
+    const r=kc.getBoundingClientRect();
+    const x=(e.clientX-(r.left+r.width/2))/r.width, y=(e.clientY-(r.top+r.height/2))/r.height;
+    cancelAnimationFrame(raf);
+    raf=requestAnimationFrame(()=>{
+      kc.style.transform=`perspective(900px) rotateY(${x*16}deg) rotateX(${-y*16}deg)`;
+      kc.style.setProperty('--a',(x*90+45)+'deg');
+    });
+  });
+  area.addEventListener('mouseleave',()=>{kc.style.transform='perspective(900px)';kc.style.setProperty('--a','0deg');});
 }
 
-/* ============ content ============ */
 const QS=[
-  {key:'identity',n:'FIELD 01 — BEARER',h:'Who <em>are</em> you?',
-   hint:'Your name and what you do — the introduction you wish every AI already had.',
-   ph:'Chad — founder building USRKey. US Central.',
-   chips:['Founder','Engineer','Designer','Writer','Researcher'],
-   note:'Only what you inscribe here is issued. <b>Nothing is inferred.</b>'},
-  {key:'stack',n:'FIELD 02 — WORKING CONTEXT',h:'What&rsquo;s your <em>world</em>?',
-   hint:'The tools you live in and how you like to work — so an agent is useful on day one, not day five.',
-   ph:'TypeScript / Node, SQLite. Cursor + Claude Code. Show me the diff, not the whole file.',
-   chips:['Show diffs','Terse first','Plan before code','No unasked refactors'],
-   note:'The context agents draw on <b>most often.</b>'},
-  {key:'now',n:'FIELD 03 — CURRENT STANDING',h:'What&rsquo;s true <em>this week</em>?',
-   hint:'Your current focus. This field is dated — a nudge reminds you to renew it.',
-   ph:'Launching USRKey. Recording the demo this week. Async-only Thu–Sun.',
-   chips:['Launching soon','Deep in a build','Traveling','Crunch mode'],
-   note:'Expires by design. <b>Renew to keep it true.</b>'},
-  {key:'bounds',n:'FIELD 04 — CONDITIONS OF USE',h:'What must an AI <em>never</em> do?',
-   hint:'The clause that makes the rest safe to grant. Never handed out without your say-so.',
-   ph:"Don't infer my mood or health. Never store anything about my family. Correct me directly.",
-   chips:["Don't guess mood","Never mention family","No financial figures","Ask if unsure"],
-   note:'Sealed. Agents may <b>read, never amend.</b>'}
+  {key:'identity',n:'01 / 04',h:'Who <span class="g">are</span> you?',hint:'Your name and what you do — the intro you wish every AI already had.',
+   ph:'Chad — founder building USRKey. US Central.',chips:['Founder','Engineer','Designer','Writer'],note:'Only what you type is shared. <b>Nothing inferred.</b>'},
+  {key:'stack',n:'02 / 04',h:'What&rsquo;s your <span class="g">world</span>?',hint:'The tools you live in and how you like to work — useful on day one, not day five.',
+   ph:'TypeScript / Node, SQLite. Cursor + Claude Code. Show me the diff, not the whole file.',chips:['Show diffs','Terse first','Plan before code','No unasked refactors'],note:'The context agents reuse <b>most.</b>'},
+  {key:'now',n:'03 / 04',h:'What&rsquo;s true <span class="g">now</span>?',hint:'This week&rsquo;s focus. This one is dated — a nudge reminds you to refresh it.',
+   ph:'Launching USRKey. Recording the demo this week. Async-only Thu–Sun.',chips:['Launching soon','Deep in a build','Traveling','Crunch mode'],note:'Expires on purpose. <b>Keep it live.</b>'},
+  {key:'bounds',n:'04 / 04',h:'What must an AI <span class="g">never</span> do?',hint:'The line that makes the rest safe to share. Never handed out without your say-so.',
+   ph:"Don't infer my mood or health. Never store anything about my family. Correct me directly.",chips:["Don't guess mood","Never mention family","No financial figures","Ask if unsure"],note:'Private. Agents <b>read, never edit.</b>'}
 ];
 const state={identity:'',stack:'',now:'',bounds:''};
-const SERIAL='UK-'+('7Q4M2X9');
 let step=0;
 const stage=document.getElementById('stage');
 const restartWrap=document.querySelector('.restart');
-document.getElementById('serialmark').textContent='NO. '+SERIAL;
 
-function firstName(){const s=(state.identity||'BEARER').trim();const m=s.match(/[A-Z][a-z]+/);return m?m[0]:(s.split(/[\s,—-]/)[0]||'BEARER');}
-function surname(){const s=(state.identity||'').trim();const caps=s.match(/[A-Z][a-z]+/g)||[];return caps[1]||'—';}
+function firstName(){const s=(state.identity||'You').trim();const m=s.match(/[A-Z][a-z]+/);return m?m[0]:(s.split(/[\s,—-]/)[0]||'You');}
 function esc(t){return (t||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
 function clause(t,f){if(!t)return f;const c=t.split(/[.\n—;]/)[0].trim();return c||f;}
-function mrz(){
-  const up=s=>(s||'').toUpperCase().replace(/[^A-Z0-9]/g,'<').replace(/<+/g,'<');
-  const pad=(s,n)=>(s+'<'.repeat(n)).slice(0,n);
-  const l1=pad('P<USRKEY'+up(surname())+'<<'+up(firstName()),44);
-  const l2=pad(SERIAL.replace(/[^A-Z0-9]/g,'')+'4USR'+up(firstName()).slice(0,4),44);
-  return [l1,l2];
-}
+function filled(){return ['identity','stack','now','bounds'].filter(k=>state[k]).length;}
 
-/* ============ render ============ */
 function render(){
   const prev=stage.querySelector('.screen.on');
   if(prev){prev.classList.remove('on');prev.classList.add('out');setTimeout(()=>prev.remove(),520);}
@@ -334,184 +254,133 @@ function render(){
   wire(el);
 }
 function view(){
-  if(step===0)return cover();
+  if(step===0)return welcome();
   if(step>=1&&step<=4)return question(step-1);
   if(step===5)return reveal();
   if(step===6)return magic();
   return control();
 }
-function cover(){return `<div class="cover">
-  <canvas width="360" height="360" id="coverseal"></canvas>
-  <div class="foilwrap">
-    <canvas class="emblem" width="96" height="96" id="emblem"></canvas>
-    <div class="label">Issued by you · honored everywhere</div>
-    <h1>Issue yourself<br>a <em>credential</em>.</h1>
-    <p>Four fields. Share only what you choose. Then any AI, anywhere, reads your credential and knows exactly that much — no more.</p>
-    <button class="btn" data-go="1">Begin issuance →</button>
+function welcome(){return `<div class="welcome">
+  <div class="copy">
+    <span class="kicker">Your context · <span class="b">your key</span></span>
+    <h1>Every AI<br>already <span class="g">knows you</span>.</h1>
+    <p>Answer four questions — share only what you want. Then any AI, anywhere, greets you knowing exactly that much. Nothing more.</p>
+    <div class="row"><button class="btn" data-go="1">Create your key →</button>
+      <button class="lnk" data-go="6" style="opacity:.7">see the payoff first</button></div>
+    <div class="meta"><span><b>~60s</b> setup</span><span><b>0</b> account</span><span><b>1</b> file you own</span></div>
   </div>
-  <div class="foot"><span class="micro">USER CONTEXT PROTOCOL</span><span class="micro">SPECIMEN · NON-TRANSFERABLE</span></div>
+  <div class="herostage"><div class="heroglow"></div>${cardHTML('Your name','USRKEY · SELF-ISSUED',0,true)}</div>
 </div>`;}
 function question(i){const q=QS[i];
-  const stamps='<div class="stamps">'+[0,1,2,3].map(k=>`<i class="${k<i?'done':k===i?'cur':''}"></i>`).join('')+'</div>';
-  return `<div class="sheet"><div class="qwrap">
+  const prog='<div class="prog">'+[0,1,2,3].map(k=>`<i class="${k<i?'done':k===i?'cur':''}"></i>`).join('')+'</div>';
+  const nm=state.identity?esc(firstName()):'Your name';
+  return `<div class="panel"><div class="qwrap">
     <div class="qmain">
-      <div class="qhead"><span class="field-index">${q.n}</span>${stamps}</div>
+      <div class="qtop"><span class="qidx">${q.n}</span>${prog}</div>
       <div class="qbody">
         <h2>${q.h}</h2>
         <p class="qhint">${q.hint}</p>
-        <div class="entry">
-          <textarea id="ans" rows="2" maxlength="240" placeholder="${q.ph}">${esc(state[q.key])}</textarea>
-          <span class="cnt" id="cnt"></span>
-        </div>
-        <div class="chips">${q.chips.map(c=>`<button class="chip">${c}</button>`).join('')}</div>
+        <div class="entry"><textarea id="ans" rows="2" maxlength="240" placeholder="${q.ph}">${esc(state[q.key])}</textarea><span class="cnt" id="cnt"></span></div>
+        <div class="chips">${q.chips.map(c=>`<span class="chip">${c}</span>`).join('')}</div>
       </div>
-      <div class="qfoot">
-        <button class="lnk" data-skip="1">✕ leave blank — I&rsquo;d rather not say</button>
-        <button class="btn" data-next="1">${i<3?'Inscribe →':'Seal the credential →'}</button>
-      </div>
+      <div class="qfoot"><button class="lnk" data-skip="1">Skip — I&rsquo;d rather not share this</button>
+        <button class="btn" data-next="1">${i<3?'Continue →':'Create key →'}</button></div>
     </div>
-    <div class="qside">
-      <canvas width="260" height="260" id="qseal"></canvas>
-      <div class="sidenote"><div class="micro" style="margin-bottom:6px">SEAL · ${i+1} OF 4 ENGRAVED</div><span class="micro" style="letter-spacing:.06em;text-transform:none;font-size:11px">${q.note}</span></div>
-    </div>
+    <div class="qside">${cardHTML(nm,'USRKEY · '+(i+1)+'/4',i+1,false)}
+      <div class="sidenote">${q.note}</div></div>
   </div></div>`;}
 function reveal(){
   const name=firstName();
   let role=clause(state.identity,'').replace(new RegExp('^'+name+'[\\s,—-]*','i'),'').trim()||'Context, self-issued';
-  const [l1,l2]=mrz();
-  const f=(k,v,ph)=>`<div class="cr-f"><span class="k">${k}</span>${v?`<span class="v">${esc(v)}</span>`:`<span class="v skip">${ph}</span>`}</div>`;
+  const r=(k,v,ph)=>`<div class="rr"><span class="k">${k}</span>${v?`<span class="v">${esc(v)}</span>`:`<span class="v skip">${ph}</span>`}</div>`;
   return `<div class="reveal">
-    <span class="label">Credential sealed · ${SERIAL}</span>
-    <div class="credential" id="cred">
-      <canvas class="guilloche" width="560" height="360" id="credbg"></canvas>
-      <div class="cr-pad">
-        <div class="cr-top">
-          <div class="cr-issuer"><div class="label">USRKey</div><div class="t">Bearer Context Credential</div></div>
-          <div class="cr-type">TYPE 4Q<br>SELF-ISSUED<br>NON-TRANSFERABLE</div>
-        </div>
-        <div class="cr-body">
-          <div>
-            <div class="cr-name">${esc(name)}</div>
-            <div class="cr-role">${esc(role)}</div>
-            <div class="cr-fields">
-              ${f('Working in',state.stack,'left blank')}
-              ${f('Standing',state.now,'left blank')}
-              ${f('Conditions',state.bounds?'Sealed · read-only to agents':'','left blank')}
-            </div>
-          </div>
-          <div class="cr-seal"><canvas width="84" height="84" id="credseal"></canvas><div class="word">USR·KEY·SELF·</div></div>
-        </div>
-      </div>
-      <div class="mrz"><div>${l1}</div><div>${l2}</div></div>
+    <span class="kicker">Your key · <span class="b">ready</span></span>
+    ${cardHTML(esc(name),'USRKEY · '+filled()+'/4 FIELDS',filled(),true)}
+    <div class="rows">
+      ${r('Works in',state.stack,'— skipped —')}
+      ${r('Right now',state.now,'— skipped —')}
+      ${r('Boundaries',state.bounds?'Private · read-only to agents':'','— skipped —')}
     </div>
-    <p class="cap">Exactly what you chose to grant — nothing more. Now watch a machine you&rsquo;ve never met read it.</p>
-    <button class="btn foil" data-go="6">Present to a fresh AI →</button>
+    <p class="cap">Exactly what you chose — nothing more. Now watch a fresh AI meet you.</p>
+    <button class="btn" data-go="6">See it in action →</button>
   </div>`;}
 function magic(){return `<div class="magic">
-  <div class="top"><span class="label" style="color:var(--seal)">The moment</span>
-    <h2 style="margin-top:8px">A new machine. <em>No introduction.</em></h2>
-    <p>A model you&rsquo;ve never used. It reads only your credential.</p></div>
-  <div class="reader">
-    <div class="rbar"><span class="micro">CONTEXT READER · MRZ INTAKE</span><span class="live"><i></i>reading credential</span></div>
-    <div class="scanline" id="scan"></div>
+  <div class="top"><span class="kicker" style="color:var(--h3)">The moment</span>
+    <h2 style="margin-top:8px">A fresh AI. <span class="g">No intro.</span></h2>
+    <p>A model you&rsquo;ve never used — it sees only your key.</p></div>
+  <div class="chatwin">
+    <div class="cbar"><span class="l"><span class="chip" style="width:9px;height:9px;border-radius:50%;background:var(--h1)"></span>new chat</span>
+      <span class="pill">USRKEY ATTACHED</span></div>
     <div class="msgs" id="msgs"></div>
   </div>
 </div>`;}
 function control(){
   const name=firstName();
   const md=`<span class="c"># identity</span>
-${esc(state.identity||'(left blank)')}
+${esc(state.identity||'(skipped)')}
 
 <span class="h"># stack</span>
-${esc(state.stack||'(left blank)')}
+${esc(state.stack||'(skipped)')}
 
 <span class="h"># now  </span><span class="c">· dated</span>
-${esc(state.now||'(left blank)')}
+${esc(state.now||'(skipped)')}
 
-<span class="h"># boundaries</span> <span class="c">· sealed, read-only</span>
-${esc(state.bounds||'(left blank)')}`;
-  const g=(m,n,s)=>`<div class="grant"><div class="who"><div class="m">${m}</div><div><div class="n">${n}</div><div class="s">${s}</div></div></div><div class="st">granted</div></div>`;
-  return `<div class="sheet"><div class="ctrl">
-    <span class="label">Endorsements</span>
-    <h2>One credential. <em>You</em> stamp who reads what.</h2>
-    <p class="lede">Each agent is granted only the fields you endorse — and your conditions are never handed out in a default bundle. Revoke or re-stamp anytime; nothing leaves your device unless you say so.</p>
+<span class="h"># boundaries</span> <span class="c">· private, read-only</span>
+${esc(state.bounds||'(skipped)')}`;
+  const t=(av,g,n,s)=>`<div class="tool"><div class="w"><div class="av" style="background:${g}">${av}</div><div><div class="n">${n}</div><div class="s">${s}</div></div></div><span class="tag">granted</span></div>`;
+  return `<div class="panel"><div class="ctrl">
+    <span class="kicker">You&rsquo;re in control</span>
+    <h2>One key. <span class="g">You</span> decide who sees what.</h2>
+    <p class="lede">Each agent gets only the fields you grant — and your boundaries are never in a default bundle. Change it anytime; nothing leaves your device unless you say so.</p>
     <div class="grid2">
       <div>
-        <div class="grants">
-          ${g('C','Claude','identity · stack · now · history')}
-          ${g('⌘','Cursor','identity · stack · now')}
-          ${g('G','ChatGPT · web','identity · stack')}
-          ${g('+','Any other','identity only')}
-        </div>
-        <div class="private">▲ Conditions of use stay sealed — readable by agents, never amendable, never in a default grant.</div>
+        ${t('C','linear-gradient(135deg,#7cf3d0,#38bfa0)','Claude','identity · stack · now · history')}
+        ${t('⌘','linear-gradient(135deg,#8ea2ff,#5b73e6)','Cursor','identity · stack · now')}
+        ${t('G','linear-gradient(135deg,#e58bff,#b45be0)','ChatGPT · web','identity · stack')}
+        ${t('+','linear-gradient(135deg,#ffd27c,#e0a640)','Any other','identity only')}
+        <div class="sealed">◆ Boundaries stay private — readable by agents, never editable, never in a default grant.</div>
       </div>
       <div class="filebox">
-        <div class="fb"><span class="fn">◆ ${name.toLowerCase()}.usrkey.md</span><span class="micro">THE BACKING · PLAIN TEXT</span></div>
+        <div class="fb"><span class="fn">◆ ${name.toLowerCase()}.usrkey.md</span><span class="m">the file underneath</span></div>
         <pre>${md}</pre>
       </div>
     </div>
-    <div class="foot">
-      <p>Underneath the seal it&rsquo;s a file you own and can read. The credential is only how it feels — carried to every AI, showing only what you chose.</p>
-      <button class="btn foil" data-go="0">↺ Issue another</button>
-    </div>
+    <div class="foot"><p>Underneath the glow it&rsquo;s a plain file you own and can read — carried to every AI, showing only what you chose.</p>
+      <button class="btn ghost" data-go="0">↺ Make another</button></div>
   </div></div>`;}
 
-/* ============ wiring ============ */
 function wire(el){
   el.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{step=+b.dataset.go;render();});
   el.querySelectorAll('[data-next]').forEach(b=>b.onclick=()=>{save(el);step++;render();});
   el.querySelectorAll('[data-skip]').forEach(b=>b.onclick=()=>{state[QS[step-1].key]='';step++;render();});
-  const ta=el.querySelector('#ans'), cnt=el.querySelector('#cnt');
-  if(ta){
-    const upd=()=>{cnt.textContent=ta.value.length?ta.value.length+'/240':'';};upd();
-    setTimeout(()=>ta.focus(),560);
-    ta.addEventListener('input',upd);
+  const ta=el.querySelector('#ans'),cnt=el.querySelector('#cnt');
+  if(ta){const upd=()=>{cnt.textContent=ta.value.length?ta.value.length+'/240':'';};upd();
+    setTimeout(()=>ta.focus(),560);ta.addEventListener('input',upd);
     el.querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ta.value=(ta.value.trim()?ta.value.trim()+', ':'')+c.textContent;ta.focus();upd();});
     ta.addEventListener('keydown',e=>{if(e.key==='Enter'&&(e.metaKey||e.ctrlKey)){save(el);step++;render();}});
-    const qs=el.querySelector('#qseal'); if(qs) animateSeal(qs,step-1,{});
   }
-  const cs=el.querySelector('#coverseal'); if(cs) spinSeal(cs,{ink:'#c3a15f',foil:'#c3a15f',seal:'#c3a15f'});
-  const em=el.querySelector('#emblem'); if(em) seal(em,4,0,{ink:'#c3a15f',foil:'#e6d3a6',seal:'#c3a15f'});
-  const cb=el.querySelector('#credbg'); if(cb) seal(cb,4,0,{});
-  const csl=el.querySelector('#credseal'); if(csl) seal(csl,4,0,{ink:'#8c2b26',foil:'#9a7b44',seal:'#8c2b26'});
-  const cred=el.querySelector('#cred');
-  if(cred)cred.addEventListener('mousemove',e=>{const r=cred.getBoundingClientRect();
-    cred.style.transform=`perspective(1400px) rotateY(${((e.clientX-r.left)/r.width-.5)*6}deg) rotateX(${(.5-(e.clientY-r.top)/r.height)*6}deg)`;});
-  if(cred)cred.addEventListener('mouseleave',()=>cred.style.transform='perspective(1400px)');
-  if(el.querySelector('#msgs'))runReader(el);
+  el.querySelectorAll('.kc').forEach(tiltCard);
+  if(el.querySelector('#msgs'))runChat(el);
 }
 function save(el){const ta=el.querySelector('#ans');if(ta)state[QS[step-1].key]=ta.value.trim();}
 document.getElementById('restart').onclick=()=>{step=0;render();};
 
-/* ============ magic-moment reader ============ */
-function runReader(el){
-  const scan=el.querySelector('#scan'), box=el.querySelector('#msgs');
-  const name=firstName(), stack=clause(state.stack,''), now=clause(state.now,''), bound=clause(state.bounds,'');
-  const [l1]=mrz();
-  const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
-  let i=0;
-  function typeScan(){
-    if(reduce){scan.innerHTML=l1+' &nbsp;<span class="ok">✓ VERIFIED</span>';return talk();}
-    if(i<=l1.length){scan.textContent=l1.slice(0,i);i++;setTimeout(typeScan,16);}
-    else{scan.innerHTML=l1+' &nbsp;<span class="ok">✓ VERIFIED</span>';setTimeout(talk,340);}
-  }
-  function talk(){
-    box.innerHTML=`<div class="msg you">hey</div>`;
-    const parts=[`Hello <b>${esc(name)}</b> — your credential checks out.`];
-    if(stack)parts.push(`I can see your working context (${esc(stack.toLowerCase())}), so I&rsquo;ll skip the onboarding.`);
-    if(now)parts.push(`And your standing this week: <b>${esc(now.toLowerCase())}</b>.`);
-    parts.push(bound?`I&rsquo;ll honor your conditions of use. Where shall we start?`:`Where shall we start?`);
-    const ai=`<div class="msg ai">${parts.join(' ')}</div>`;
-    setTimeout(()=>{
-      const t=document.createElement('div');t.className='msg ai';t.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';box.appendChild(t);
-      setTimeout(()=>{t.outerHTML=ai;
-        setTimeout(()=>{const c=document.createElement('div');c.style.cssText='text-align:center;margin-top:14px';
-          c.innerHTML='<button class="btn foil" data-go="7">It read only what you granted →</button>';
-          box.parentElement.appendChild(c);c.querySelector('button').onclick=()=>{step=7;render();};},640);
-      },reduce?0:1300);
-    },520);
-  }
-  typeScan();
+function runChat(el){
+  const box=el.querySelector('#msgs');const reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  const name=firstName(),stack=clause(state.stack,''),now=clause(state.now,''),bound=clause(state.bounds,'');
+  box.innerHTML=`<div class="msg you">hey</div>`;
+  const parts=[`Hey <b>${esc(name)}</b> — good to see you.`];
+  if(stack)parts.push(`I&rsquo;ve got your setup (${esc(stack.toLowerCase())}), so I&rsquo;ll skip the onboarding.`);
+  if(now)parts.push(`And I know you&rsquo;re on: <b>${esc(now.toLowerCase())}</b>.`);
+  parts.push(bound?`I&rsquo;ll respect your boundaries too. Where do you want to start?`:`Where do you want to start?`);
+  const ai=`<div class="msg ai">${parts.join(' ')}</div>`;
+  setTimeout(()=>{const t=document.createElement('div');t.className='msg ai';t.innerHTML='<span class="typing"><i></i><i></i><i></i></span>';box.appendChild(t);
+    setTimeout(()=>{t.outerHTML=ai;
+      setTimeout(()=>{const c=document.createElement('div');c.style.cssText='text-align:center;margin-top:14px';
+        c.innerHTML='<button class="btn ghost" data-go="7">It just knew → see what it saw</button>';
+        box.parentElement.appendChild(c);c.querySelector('button').onclick=()=>{step=7;render();};},640);
+    },reduce?0:1250);
+  },560);
 }
 render();
 </script>
